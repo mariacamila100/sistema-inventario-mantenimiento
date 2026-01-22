@@ -27,10 +27,11 @@ app.get('/', (req, res) => {
 });
 
 // --- Lanzamiento ---
+// --- Lanzamiento ---
 const PORT = process.env.PORT || 3000;
 
-// Escuchar en 0.0.0.0 permite que otros equipos usen tu IP para entrar
-app.listen(PORT, '0.0.0.0', () => {
-  console.log(`🚀 Servidor corriendo en red local en el puerto ${PORT}`);
-  console.log(`📍 Intenta entrar desde otro equipo a: http://192.168.0.115:${PORT}/api/productos`);
+// En Railway NO usamos '0.0.0.0', dejamos que el servidor escuche por defecto
+app.listen(PORT, () => {
+  console.log(`🚀 Servidor en línea en el puerto ${PORT}`);
+  console.log(`🔗 API Lista en: ${process.env.RAILWAY_STATIC_URL || 'http://localhost:' + PORT}`);
 });

@@ -1,12 +1,11 @@
 import axios from 'axios';
 
-// 1. Averigua la IP de tu PC Servidor con 'ipconfig' en la terminal
-// 2. Cambia 'localhost' por esa IP (Ejemplo: 192.168.1.15)
-const SERVER_IP = '192.168.0.115'; 
+// La URL que te dio Railway para el BACKEND (asegúrate de que sea la del backend)
+const RAILWAY_API_URL = 'https://sistema-inventario-mantenimiento-production.up.railway.app'; 
 
 const api = axios.create({
-  // Ahora cualquier equipo de tu red apuntará a la PC Servidor
-  baseURL: `http://${SERVER_IP}:3000/api`, 
+  // Agregamos /api al final para que coincida con tus rutas de Node.js
+  baseURL: `${RAILWAY_API_URL}/api`, 
   headers: {
     'Content-Type': 'application/json',
   },
