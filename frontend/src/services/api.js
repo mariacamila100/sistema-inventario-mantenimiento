@@ -1,7 +1,12 @@
 import axios from 'axios';
 
+// 1. Averigua la IP de tu PC Servidor con 'ipconfig' en la terminal
+// 2. Cambia 'localhost' por esa IP (Ejemplo: 192.168.1.15)
+const SERVER_IP = '192.168.0.115'; 
+
 const api = axios.create({
-  baseURL: 'http://localhost:3000/api',
+  // Ahora cualquier equipo de tu red apuntará a la PC Servidor
+  baseURL: `http://${SERVER_IP}:3000/api`, 
   headers: {
     'Content-Type': 'application/json',
   },
