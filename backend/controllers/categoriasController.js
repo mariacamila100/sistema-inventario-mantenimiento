@@ -1,10 +1,10 @@
 const db = require('../config/database');
 
-exports.getCategorias = (req, res) => {
-  db.query('SELECT * FROM categorias ORDER BY nombre', (err, results) => {
-    if (err) {
-      return res.status(500).json({ error: err.message });
-    }
+exports.getCategorias = async (req, res) => {
+  try {
+    const [results] = await db.query('SELECT * FROM categorias ORDER BY nombre');
     res.json(results);
-  });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 };
