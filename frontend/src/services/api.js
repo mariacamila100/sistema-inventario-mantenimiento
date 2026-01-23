@@ -1,15 +1,31 @@
 import axios from 'axios';
 
-// La URL que te dio Railway para el BACKEND (asegúrate de que sea la del backend)
 const RAILWAY_API_URL = 'https://sistema-inventario-mantenimiento-production.up.railway.app'; 
 
 const api = axios.create({
-  // Agregamos /api al final para que coincida con tus rutas de Node.js
   baseURL: `${RAILWAY_API_URL}/api`, 
   headers: {
     'Content-Type': 'application/json',
   },
 });
+
+// --- INTERCEPTOR PARA INYECTAR EL TOKEN ---
+api.interceptors.request.use((config) => {
+  const token = localStorage.getItem('token');
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+}, (error) => {
+  return Promise.reject(error);
+});
+
+// --- SERVICIOS DE API ---
+
+export const authAPI = {
+  login: (credentials) => api.post('/auth/login', credentials),
+  register: (userData) => api.post('/auth/register', userData),
+};
 
 export const productosAPI = {
   getAll: () => api.get('/productos'),
@@ -26,10 +42,16 @@ export const movimientosAPI = {
 
 export const categoriasAPI = {
   getAll: () => api.get('/categorias'),
+  create: (data) => api.post('/categorias', data),
+  update: (id, data) => api.put(`/categorias/${id}`, data),
+  delete: (id) => api.delete(`/categorias/${id}`),
 };
 
 export const proveedoresAPI = {
   getAll: () => api.get('/proveedores'),
+  create: (data) => api.post('/proveedores', data),
+  update: (id, data) => api.put(`/proveedores/${id}`, data),
+  delete: (id) => api.delete(`/proveedores/${id}`),
 };
 
 export default api;

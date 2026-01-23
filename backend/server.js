@@ -20,6 +20,8 @@ app.use('/api/productos', require('./routes/productos'));
 app.use('/api/movimientos', require('./routes/movimientos'));
 app.use('/api/categorias', require('./routes/categorias'));
 app.use('/api/proveedores', require('./routes/proveedores'));
+app.use('/api/auth', require('./routes/auth'));
+
 
 // Ruta de prueba inicial
 app.get('/', (req, res) => {
