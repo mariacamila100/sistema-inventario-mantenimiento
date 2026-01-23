@@ -27,23 +27,21 @@ const Notification = ({ message, type, onClose }) => {
 };
 
 function Proveedores() {
-  // Estados de datos
   const [proveedores, setProveedores] = useState([]);
   const [loading, setLoading] = useState(true);
-  
-  // Estados de UI
   const [searchTerm, setSearchTerm] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [editingProvider, setEditingProvider] = useState(null);
   const [notification, setNotification] = useState(null);
 
-  // Estados de Paginación
+  // Paginación
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage] = useState(5);//aca se coloca el numero de items que se quieren mostrar por pagina
+  const [itemsPerPage] = useState(5);
 
+  // formData sincronizado con la BD (usando 'contacto' en lugar de 'contacto_nombre')
   const [formData, setFormData] = useState({
     nombre: '',
-    contacto_nombre: '',
+    contacto: '', 
     telefono: '',
     email: '',
     direccion: ''
@@ -65,13 +63,12 @@ function Proveedores() {
     loadProveedores();
   }, [loadProveedores]);
 
-  // Filtrado
+  // Filtrado corregido para usar 'contacto'
   const filtered = proveedores.filter(p =>
-    p.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (p.contacto_nombre && p.contacto_nombre.toLowerCase().includes(searchTerm.toLowerCase()))
+    p.nombre?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (p.contacto && p.contacto.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
-  // Paginación
   const totalPages = Math.ceil(filtered.length / itemsPerPage);
   const indexOfLastItem = currentPage * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
@@ -98,7 +95,7 @@ function Proveedores() {
     setEditingProvider(prov);
     setFormData({
       nombre: prov.nombre,
-      contacto_nombre: prov.contacto_nombre || '',
+      contacto: prov.contacto || '', 
       telefono: prov.telefono || '',
       email: prov.email || '',
       direccion: prov.direccion || ''
@@ -107,7 +104,7 @@ function Proveedores() {
   };
 
   const handleDelete = async (id) => {
-    if (window.confirm('¿Eliminar este proveedor? Asegúrate de que no tenga productos asociados.')) {
+    if (window.confirm('¿Eliminar este proveedor?')) {
       try {
         await proveedoresAPI.delete(id);
         setNotification({ message: 'Proveedor eliminado correctamente', type: 'success' });
@@ -121,13 +118,11 @@ function Proveedores() {
   const closeModal = () => {
     setShowModal(false);
     setEditingProvider(null);
-    setFormData({ nombre: '', contacto_nombre: '', telefono: '', email: '', direccion: '' });
+    setFormData({ nombre: '', contacto: '', telefono: '', email: '', direccion: '' });
   };
 
   return (
     <div className="w-full max-w-7xl mx-auto p-4 md:p-6 lg:p-8 space-y-6">
-      
-      {/* Header */}
       <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mt-4">
         <div>
           <h1 className="text-3xl md:text-4xl font-black text-slate-900 tracking-tight">Proveedores</h1>
@@ -141,7 +136,6 @@ function Proveedores() {
         </button>
       </header>
 
-      {/* Buscador */}
       <div className="relative max-w-md">
         <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5" />
         <input
@@ -153,9 +147,7 @@ function Proveedores() {
         />
       </div>
 
-      {/* Tabla Contenedora */}
       <div className="bg-white rounded-[2rem] shadow-xl shadow-slate-200/50 border border-slate-100 overflow-hidden relative min-h-[400px]">
-        
         {loading && (
           <div className="absolute inset-0 bg-white/60 backdrop-blur-[2px] z-20 flex flex-col items-center justify-center">
             <Loader2 className="w-10 h-10 text-blue-600 animate-spin mb-2" />
@@ -188,7 +180,7 @@ function Proveedores() {
                     <td className="px-8 py-5">
                       <div className="flex items-center gap-2 text-slate-600 font-medium">
                         <User className="w-4 h-4 text-slate-300" />
-                        {prov.contacto_nombre || '---'}
+                        {prov.contacto || '---'}
                       </div>
                     </td>
                     <td className="px-8 py-5">
@@ -214,19 +206,13 @@ function Proveedores() {
                   </tr>
                 ))
               ) : (
-                !loading && (
-                  <tr>
-                    <td colSpan="4" className="px-8 py-20 text-center text-slate-400 font-medium">
-                      No se encontraron proveedores.
-                    </td>
-                  </tr>
-                )
+                !loading && <tr><td colSpan="4" className="px-8 py-20 text-center text-slate-400">No se encontraron proveedores.</td></tr>
               )}
             </tbody>
           </table>
         </div>
 
-        {/* Paginación */}
+        {/* Paginación - Diseño Original con Sombras */}
         {!loading && filtered.length > 0 && (
           <div className="p-6 bg-slate-50/50 border-t border-slate-100 flex flex-col sm:flex-row justify-between items-center gap-4">
             <p className="text-sm text-slate-500 font-medium">
@@ -238,7 +224,7 @@ function Proveedores() {
                 onClick={() => setCurrentPage(prev => prev - 1)}
                 className="p-2 rounded-xl bg-white border border-slate-200 disabled:opacity-30 hover:bg-slate-100 transition-all shadow-sm"
               >
-                <ChevronLeft className="w-5 h-5 text-slate-600" />
+                <ChevronLeft className="w-5 h-5" />
               </button>
               <div className="flex gap-1">
                 {[...Array(totalPages)].map((_, i) => (
@@ -246,7 +232,9 @@ function Proveedores() {
                     key={i + 1}
                     onClick={() => setCurrentPage(i + 1)}
                     className={`w-10 h-10 rounded-xl font-bold text-sm transition-all ${
-                      currentPage === i + 1 ? 'bg-blue-600 text-white shadow-lg shadow-blue-200' : 'bg-white border border-slate-200 text-slate-400 hover:border-blue-300'
+                      currentPage === i + 1 
+                        ? 'bg-blue-600 text-white shadow-lg shadow-blue-200' 
+                        : 'bg-white border border-slate-200 text-slate-400 hover:border-blue-300'
                     }`}
                   >
                     {i + 1}
@@ -258,14 +246,13 @@ function Proveedores() {
                 onClick={() => setCurrentPage(prev => prev + 1)}
                 className="p-2 rounded-xl bg-white border border-slate-200 disabled:opacity-30 hover:bg-slate-100 transition-all shadow-sm"
               >
-                <ChevronRight className="w-5 h-5 text-slate-600" />
+                <ChevronRight className="w-5 h-5" />
               </button>
             </div>
           </div>
         )}
       </div>
 
-      {/* Modal */}
       {showModal && (
         <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center z-[120] p-4">
           <div className="bg-white rounded-[2.5rem] p-6 md:p-10 w-full max-w-lg shadow-2xl animate-in zoom-in duration-200 max-h-[95vh] overflow-y-auto">
@@ -285,7 +272,7 @@ function Proveedores() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <label className="text-sm font-bold text-slate-700 ml-1">Persona de Contacto</label>
-                  <input type="text" value={formData.contacto_nombre} onChange={(e) => setFormData({...formData, contacto_nombre: e.target.value})} className="w-full px-4 py-3 rounded-2xl border border-slate-200 outline-none focus:ring-4 focus:ring-blue-500/10 transition-all" />
+                  <input type="text" value={formData.contacto} onChange={(e) => setFormData({...formData, contacto: e.target.value})} className="w-full px-4 py-3 rounded-2xl border border-slate-200 outline-none focus:ring-4 focus:ring-blue-500/10 transition-all" />
                 </div>
                 <div className="space-y-2">
                   <label className="text-sm font-bold text-slate-700 ml-1">Teléfono</label>

@@ -38,13 +38,8 @@ function Movimientos() {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(5);
 
-  // Obtener el ID del usuario logueado
-  const user = JSON.parse(localStorage.getItem('user'));
-  const currentUserId = user?.id || 1; 
-
   const [formData, setFormData] = useState({
     producto_id: '',
-    usuario_id: currentUserId, 
     tipo: 'entrada',
     cantidad: 1,
     motivo: '',
@@ -75,7 +70,6 @@ function Movimientos() {
     setShowModal(false);
     setFormData({
       producto_id: '',
-      usuario_id: currentUserId,
       tipo: 'entrada',
       cantidad: 1,
       motivo: '',
@@ -87,10 +81,8 @@ function Movimientos() {
     e.preventDefault();
     setLoading(true);
     try {
-      // El payload ahora usa 'usuario_id' para coincidir con tu cambio en la BD
       const payload = {
         producto_id: Number(formData.producto_id),
-        usuario_id: Number(currentUserId), 
         tipo: formData.tipo,
         cantidad: Number(formData.cantidad),
         motivo: formData.motivo,
@@ -98,12 +90,10 @@ function Movimientos() {
       };
 
       await movimientosAPI.create(payload);
-      
       setNotification({ message: '¡Movimiento registrado!', type: 'success' });
       loadData();
       closeModal();
     } catch (error) {
-      console.error(error);
       setNotification({ 
         message: error.response?.data?.error || 'Error al registrar movimiento', 
         type: 'error' 
@@ -113,10 +103,11 @@ function Movimientos() {
     }
   };
 
+  // --- CORRECCIÓN EN EL FILTRO ---
   const filteredMovimientos = movimientos.filter(m =>
-    m.producto?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    m.responsable?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    m.codigo?.toLowerCase().includes(searchTerm.toLowerCase())
+    m.producto_nombre?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    m.username?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    m.motivo?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const totalPages = Math.ceil(filteredMovimientos.length / itemsPerPage);
@@ -139,19 +130,17 @@ function Movimientos() {
         </button>
       </header>
 
-      {/* Buscador */}
       <div className="relative w-full max-w-md">
         <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5" />
         <input
           type="text"
-          placeholder="Buscar producto, código o responsable..."
+          placeholder="Buscar producto, motivo o responsable..."
           value={searchTerm}
           onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }}
           className="w-full pl-12 pr-4 py-3 bg-white border border-slate-200 rounded-2xl shadow-sm focus:ring-4 focus:ring-blue-500/10 outline-none transition-all"
         />
       </div>
 
-      {/* Contenedor de Tabla */}
       <div className="bg-white rounded-[2rem] shadow-xl shadow-slate-200/50 border border-slate-100 overflow-hidden relative min-h-[400px]">
         {loading && (
           <div className="absolute inset-0 bg-white/60 backdrop-blur-[2px] z-20 flex flex-col items-center justify-center">
@@ -186,8 +175,9 @@ function Movimientos() {
                           <ClipboardList className="w-5 h-5" />
                         </div>
                         <div>
-                          <div className="font-bold text-slate-800">{mov.producto}</div>
-                          <div className="text-slate-400 text-[10px] font-mono">{mov.codigo}</div>
+                          {/* CORRECCIÓN: usamos producto_nombre */}
+                          <div className="font-bold text-slate-800">{mov.producto_nombre}</div>
+                          <div className="text-slate-400 text-[10px] font-mono">{mov.motivo}</div>
                         </div>
                       </div>
                     </td>
@@ -202,17 +192,17 @@ function Movimientos() {
                       </span>
                     </td>
                     <td className="px-6 py-5 font-black text-slate-900 text-lg">{mov.cantidad}</td>
-                    <td className="px-6 py-5 text-slate-600 font-medium">{mov.responsable}</td>
+                    {/* CORRECCIÓN: usamos username */}
+                    <td className="px-6 py-5 text-slate-600 font-medium">{mov.username}</td>
                   </tr>
                 ))
               ) : (
-                !loading && <tr><td colSpan="5" className="py-20 text-center text-slate-400">No hay movimientos.</td></tr>
+                !loading && <tr><td colSpan="5" className="py-20 text-center text-slate-400">No hay movimientos registrados.</td></tr>
               )}
             </tbody>
           </table>
         </div>
 
-        {/* Paginación */}
         {!loading && filteredMovimientos.length > 0 && (
           <div className="p-6 bg-slate-50/50 border-t border-slate-100 flex flex-col sm:flex-row justify-between items-center gap-4">
             <p className="text-sm text-slate-500 font-medium">
@@ -226,23 +216,19 @@ function Movimientos() {
               >
                 <ChevronLeft className="w-5 h-5" />
               </button>
-              
               <div className="flex gap-1">
                 {[...Array(totalPages)].map((_, i) => (
                   <button
                     key={i + 1}
                     onClick={() => setCurrentPage(i + 1)}
                     className={`w-10 h-10 rounded-xl font-bold text-sm transition-all ${
-                      currentPage === i + 1 
-                        ? 'bg-blue-600 text-white shadow-lg' 
-                        : 'bg-white border border-slate-200 text-slate-400 hover:border-blue-300'
+                      currentPage === i + 1 ? 'bg-blue-600 text-white shadow-lg' : 'bg-white border border-slate-200 text-slate-400 hover:border-blue-300'
                     }`}
                   >
                     {i + 1}
                   </button>
                 ))}
               </div>
-
               <button
                 disabled={currentPage === totalPages}
                 onClick={() => setCurrentPage(prev => prev + 1)}
@@ -255,7 +241,6 @@ function Movimientos() {
         )}
       </div>
 
-      {/* Modal de Registro */}
       {showModal && (
         <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center z-[120] p-4">
           <div className="bg-white rounded-[2.5rem] p-6 md:p-10 w-full max-w-lg shadow-2xl max-h-[95vh] overflow-y-auto">
