@@ -1,39 +1,55 @@
 const express = require('express');
-const cors = require('cors'); // Se declara una sola vez aquí arriba
+const cors = require('cors');
 require('dotenv').config();
 
 const app = express();
 
 // --- Middlewares ---
 
-// Configuración de CORS para permitir conexiones de red local
+// Configuración de CORS optimizada
 app.use(cors({
-  origin: '*', 
-  methods: ['GET', 'POST', 'PUT', 'DELETE'],
-  allowedHeaders: ['Content-Type', 'Authorization']
+  // Permitimos tanto localhost como tu dominio de Railway
+  origin: [
+    'http://localhost:5173', // Puerto por defecto de Vite
+    'https://vibrant-perception-production.up.railway.app'
+  ],
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true // Útil si en el futuro usas cookies
 }));
 
 app.use(express.json());
 
 // --- Rutas ---
+// Nota: Asegúrate de que los archivos existan en la carpeta ./routes/
 app.use('/api/productos', require('./routes/productos'));
 app.use('/api/movimientos', require('./routes/movimientos'));
 app.use('/api/categorias', require('./routes/categorias'));
 app.use('/api/proveedores', require('./routes/proveedores'));
 app.use('/api/auth', require('./routes/auth'));
 
-
 // Ruta de prueba inicial
 app.get('/', (req, res) => {
-  res.json({ message: 'API Inventario Mantenimiento funcionando' });
+  res.json({ 
+    status: 'online',
+    message: 'API Inventario Mantenimiento funcionando correctamente' 
+  });
 });
 
 // --- Lanzamiento ---
-// --- Lanzamiento ---
 const PORT = process.env.PORT || 3000;
 
-// En Railway NO usamos '0.0.0.0', dejamos que el servidor escuche por defecto
+// Manejo de errores global (opcional pero recomendado)
+app.use((err, req, res, next) => {
+  console.error(err.stack);
+  res.status(500).json({ error: 'Algo salió mal en el servidor' });
+});
+
 app.listen(PORT, () => {
   console.log(`🚀 Servidor en línea en el puerto ${PORT}`);
-  console.log(`🔗 API Lista en: ${process.env.RAILWAY_STATIC_URL || 'http://localhost:' + PORT}`);
+  // Mostramos la URL de Railway si existe, si no, la local
+  const url = process.env.RAILWAY_STATIC_URL 
+    ? `https://${process.env.RAILWAY_STATIC_URL}` 
+    : `http://localhost:${PORT}`;
+  console.log(`🔗 API Lista en: ${url}`);
 });
