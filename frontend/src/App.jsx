@@ -6,7 +6,7 @@ import Productos from './pages/Productos';
 import Movimientos from './pages/Movimientos';
 import Categorias from './pages/Categorias';
 import Proveedores from './pages/Proveedores';
-import Login from './pages/Login'; // Asegúrate de crear este archivo
+import Login from './pages/Login';
 import Registro from './pages/Registro';
 
 // --- COMPONENTE DE RUTA PROTEGIDA ---
@@ -18,30 +18,45 @@ const ProtectedRoute = ({ children }) => {
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(!!localStorage.getItem('token'));
+  const [user, setUser] = useState(null);
 
-  // Escuchar cambios en el login
+  // Cargar datos del usuario al iniciar o recargar
+  useEffect(() => {
+    const savedUser = localStorage.getItem('user');
+    if (savedUser) {
+      setUser(JSON.parse(savedUser));
+    }
+  }, [isAuthenticated]);
+
   const handleLogin = (token, userData) => {
     localStorage.setItem('token', token);
     localStorage.setItem('user', JSON.stringify(userData));
+    setUser(userData);
     setIsAuthenticated(true);
   };
 
   const handleLogout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
+    setUser(null);
     setIsAuthenticated(false);
   };
 
   return (
     <Router>
-      <div className="flex min-h-screen bg-gray-100">
+      <div className="flex min-h-screen bg-slate-50">
+        
+        {/* Navbar con datos del usuario y función de logout */}
+        {isAuthenticated && (
+          <Navbar 
+            onLogout={handleLogout} 
+            userName={user?.nombre_completo || user?.username || 'Usuario'} 
+          />
+        )}
 
-        {/* Solo mostramos el Navbar si el usuario está autenticado */}
-        {isAuthenticated && <Navbar onLogout={handleLogout} />}
-
-        <main className={`flex-1 ${isAuthenticated ? 'p-10' : 'p-0'}`}>
+        <main className={`flex-1 transition-all duration-300 ${isAuthenticated ? 'lg:p-8 p-4 mt-16 lg:mt-0' : 'p-0'}`}>
           <Routes>
-            {/* Ruta Pública */}
+            {/* Rutas Públicas */}
             <Route
               path="/login"
               element={!isAuthenticated ? <Login onLoginSuccess={handleLogin} /> : <Navigate to="/" />}
@@ -58,12 +73,10 @@ function App() {
             <Route path="/categorias" element={<ProtectedRoute><Categorias /></ProtectedRoute>} />
             <Route path="/proveedores" element={<ProtectedRoute><Proveedores /></ProtectedRoute>} />
 
-
             {/* Redirección por defecto */}
             <Route path="*" element={<Navigate to={isAuthenticated ? "/" : "/login"} />} />
           </Routes>
         </main>
-
       </div>
     </Router>
   );

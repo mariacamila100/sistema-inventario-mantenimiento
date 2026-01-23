@@ -1,8 +1,8 @@
 import { Link, useLocation } from 'react-router-dom';
-import { Package, History, Home, Menu, X } from 'lucide-react';
+import { Package, History, Home, Menu, X, LogOut } from 'lucide-react'; // Agregamos LogOut
 import { useState } from 'react';
 
-function Navbar() {
+function Navbar({ onLogout, userName }) { // Agregamos los props
   const location = useLocation();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   
@@ -49,6 +49,14 @@ function Navbar() {
                 <span className="font-medium">{item.label}</span>
               </Link>
             ))}
+            {/* Logout en móvil */}
+            <button
+              onClick={onLogout}
+              className="w-full flex items-center space-x-3 px-6 py-4 hover:bg-red-600 transition border-t border-blue-500/50"
+            >
+              <LogOut className="w-5 h-5" />
+              <span className="font-medium">Cerrar Sesión</span>
+            </button>
           </div>
         )}
       </div>
@@ -79,9 +87,26 @@ function Navbar() {
           </div>
         </div>
 
-        {/* Footer del Sidebar */}
-        <div className="p-4 border-t border-blue-500/50 text-xs text-blue-200 text-center">
-          © 2026 Sistema Inventario
+        {/* Footer del Sidebar con Usuario y Logout */}
+        <div className="p-4 border-t border-blue-500/50">
+          {/* Info Usuario */}
+          <div className="px-4 py-2 mb-2 bg-blue-700/50 rounded-lg">
+            <p className="text-[10px] text-blue-200 uppercase font-bold">Usuario</p>
+            <p className="text-sm font-medium truncate">{userName}</p>
+          </div>
+          
+          {/* Botón Logout */}
+          <button 
+            onClick={onLogout}
+            className="flex items-center space-x-3 w-full px-4 py-3 rounded-xl hover:bg-red-600 transition-all duration-200"
+          >
+            <LogOut className="w-5 h-5" />
+            <span className="font-medium">Cerrar Sesión</span>
+          </button>
+
+          <div className="mt-4 text-[10px] text-blue-200 text-center">
+            © 2026 Sistema Inventario
+          </div>
         </div>
       </nav>
     </>
