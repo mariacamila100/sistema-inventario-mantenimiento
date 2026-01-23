@@ -1,64 +1,64 @@
+// movimientosController.js
 const db = require('../config/database');
 
-// Obtener movimientos
-exports.getMovimientos = async (req, res) => {
-  const query = `
-    SELECT 
-      m.*,
-      p.nombre as producto,
-      p.codigo
-    FROM movimientos m
-    JOIN productos p ON m.producto_id = p.id
-    ORDER BY m.fecha DESC
-    LIMIT 100
-  `;
-  
-  try {
-    const [results] = await db.query(query);
-    res.json(results);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-};
-
-// Registrar movimiento (entrada o salida) con Transacción
 exports.createMovimiento = async (req, res) => {
-  const { producto_id, tipo, cantidad, motivo, usuario, observaciones } = req.body;
-  
-  // Obtenemos una conexión específica para la transacción
+  const { producto_id, tipo, cantidad, motivo, observaciones } = req.body;
+
+  // IMPORTANTE: Asegúrate que tu middleware de auth asigne el ID aquí
+  const usuarioId = req.user?.id; 
+
+  if (!usuarioId) {
+    return res.status(401).json({ error: 'Sesión expirada o inválida' });
+  }
+
   const connection = await db.getConnection();
-  
   try {
     await connection.beginTransaction();
 
-    // 1. Insertar movimiento
+    // 1. Validar producto y stock
+    const [prodResult] = await connection.query(
+      'SELECT stock_actual FROM productos WHERE id = ?',
+      [producto_id]
+    );
+
+    if (prodResult.length === 0) {
+      throw new Error('El producto no existe');
+    }
+
+    if (tipo === 'salida' && prodResult[0].stock_actual < cantidad) {
+      throw new Error('Stock insuficiente');
+    }
+
+    // 2. LA CORRECCIÓN CLAVE: Usar 'usuario_id' como nombre de columna
     const insertQuery = `
-      INSERT INTO movimientos (producto_id, tipo, cantidad, motivo, usuario, observaciones)
+      INSERT INTO movimientos (producto_id, tipo, cantidad, motivo, usuario_id, observaciones)
       VALUES (?, ?, ?, ?, ?, ?)
     `;
-    const [result] = await connection.query(insertQuery, [producto_id, tipo, cantidad, motivo, usuario, observaciones]);
-    
-    // 2. Calcular cambio de stock
-    const stockChange = tipo === 'entrada' ? cantidad : -cantidad;
-    const updateQuery = 'UPDATE productos SET stock_actual = stock_actual + ? WHERE id = ?';
-    
-    await connection.query(updateQuery, [stockChange, producto_id]);
 
-    // 3. Confirmar cambios
+    const [result] = await connection.query(insertQuery, [
+      producto_id,
+      tipo,
+      cantidad,
+      motivo,
+      usuarioId, // Este es el ID numérico del usuario
+      observaciones || null
+    ]);
+
+    // 3. Actualizar Stock
+    const stockChange = tipo === 'entrada' ? cantidad : -cantidad;
+    await connection.query(
+      'UPDATE productos SET stock_actual = stock_actual + ? WHERE id = ?',
+      [stockChange, producto_id]
+    );
+
     await connection.commit();
-    
-    res.status(201).json({ 
-      message: 'Movimiento registrado correctamente', 
-      id: result.insertId 
-    });
+    res.status(201).json({ message: 'Movimiento registrado', id: result.insertId });
 
   } catch (err) {
-    // Si algo sale mal, deshacemos todo
     await connection.rollback();
-    console.error('Error en transacción:', err);
-    res.status(500).json({ error: 'Error al registrar el movimiento: ' + err.message });
+    console.error("Error en SQL:", err.message);
+    res.status(400).json({ error: err.message });
   } finally {
-    // Muy importante: liberar la conexión siempre
     connection.release();
   }
 };
