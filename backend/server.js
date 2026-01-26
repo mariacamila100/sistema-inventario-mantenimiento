@@ -27,6 +27,7 @@ app.use('/api/movimientos', require('./routes/movimientos'));
 app.use('/api/categorias', require('./routes/categorias'));
 app.use('/api/proveedores', require('./routes/proveedores'));
 app.use('/api/auth', require('./routes/auth'));
+app.use('/api/informes', require('./routes/informes'));
 
 // Ruta de prueba inicial
 app.get('/', (req, res) => {

@@ -16,6 +16,7 @@ function Navbar({ onLogout, userName }) { // Agregamos los props
     { path: '/movimientos', icon: History, label: 'Movimientos' },
     { path: '/categorias', icon: History, label: 'Categorías' },
     { path: '/proveedores', icon: History, label: 'Proveedores' },
+    { path: '/informes', icon: History, label: 'Informes' }
   ];
 
   return (

@@ -8,6 +8,7 @@ import Categorias from './pages/Categorias';
 import Proveedores from './pages/Proveedores';
 import Login from './pages/Login';
 import Registro from './pages/Registro';
+import Informes from './pages/Informes'; 
 
 // --- COMPONENTE DE RUTA PROTEGIDA ---
 const ProtectedRoute = ({ children }) => {
@@ -72,6 +73,9 @@ function App() {
             <Route path="/movimientos" element={<ProtectedRoute><Movimientos /></ProtectedRoute>} />
             <Route path="/categorias" element={<ProtectedRoute><Categorias /></ProtectedRoute>} />
             <Route path="/proveedores" element={<ProtectedRoute><Proveedores /></ProtectedRoute>} />
+            
+            {/* NUEVA RUTA DE INFORMES AÑADIDA AQUÍ */}
+            <Route path="/informes" element={<ProtectedRoute><Informes /></ProtectedRoute>} />
 
             {/* Redirección por defecto */}
             <Route path="*" element={<Navigate to={isAuthenticated ? "/" : "/login"} />} />

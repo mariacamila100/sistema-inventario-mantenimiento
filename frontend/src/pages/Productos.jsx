@@ -3,7 +3,7 @@ import { productosAPI, categoriasAPI, proveedoresAPI } from '../services/api';
 import { 
   Plus, Edit, Trash2, Search, Package, Tag, 
   X, CheckCircle2, AlertCircle, Loader2, 
-  ChevronLeft, ChevronRight, AlertTriangle 
+  ChevronLeft, ChevronRight, AlertTriangle, Truck, MapPin 
 } from 'lucide-react';
 
 // --- COMPONENTE DE NOTIFICACIÓN ---
@@ -58,7 +58,6 @@ function Productos() {
   const [notification, setNotification] = useState(null);
   const [confirmDelete, setConfirmDelete] = useState({ show: false, id: null });
 
-  // Paginación igual a Categorías
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(5);
 
@@ -90,13 +89,11 @@ function Productos() {
     loadData();
   }, [loadData]);
 
-  // Filtrado
   const filtered = productos.filter(p =>
-    p.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    p.codigo.toLowerCase().includes(searchTerm.toLowerCase())
+    p.nombre?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    p.codigo?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  // Paginación lógica
   const totalPages = Math.ceil(filtered.length / itemsPerPage);
   const indexOfLastItem = currentPage * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
@@ -104,12 +101,25 @@ function Productos() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    // Validación básica de IDs
+    if (!formData.categoria_id || !formData.proveedor_id) {
+      setNotification({ message: 'Selecciona categoría y proveedor', type: 'error' });
+      return;
+    }
+
     try {
+      const dataToSend = {
+        ...formData,
+        stock_actual: Number(formData.stock_actual),
+        stock_minimo: Number(formData.stock_minimo),
+        precio_unitario: Number(formData.precio_unitario)
+      };
+
       if (editingProduct) {
-        await productosAPI.update(editingProduct.id, formData);
+        await productosAPI.update(editingProduct.id, dataToSend);
         setNotification({ message: 'Producto actualizado con éxito', type: 'success' });
       } else {
-        await productosAPI.create(formData);
+        await productosAPI.create(dataToSend);
         setNotification({ message: 'Producto registrado correctamente', type: 'success' });
       }
       loadData();
@@ -143,21 +153,19 @@ function Productos() {
   return (
     <div className="w-full max-w-7xl mx-auto p-4 md:p-6 lg:p-8 space-y-6">
       
-      {/* Header */}
       <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mt-4">
         <div>
           <h1 className="text-3xl md:text-4xl font-black text-slate-900 tracking-tight">Productos</h1>
-          <p className="text-slate-500 font-medium">Gestión de inventario y stock</p>
+          <p className="text-slate-500 font-medium">Gestión de inventario y stock técnico</p>
         </div>
         <button
           onClick={() => setShowModal(true)}
-          className="w-full sm:w-auto flex items-center justify-center gap-2 bg-blue-600 text-white px-6 py-3 rounded-2xl font-bold hover:bg-blue-700 shadow-lg transition-all active:scale-95"
+          className="w-full sm:w-auto flex items-center justify-center gap-2 bg-blue-600 text-white px-6 py-3 rounded-2xl font-bold hover:bg-blue-700 shadow-lg shadow-blue-200 transition-all active:scale-95"
         >
           <Plus className="w-5 h-5" /> Nuevo Producto
         </button>
       </header>
 
-      {/* Buscador */}
       <div className="relative max-w-md">
         <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5" />
         <input
@@ -169,13 +177,11 @@ function Productos() {
         />
       </div>
 
-      {/* Tabla con el Loading Circular de Categorías */}
       <div className="bg-white rounded-[2rem] shadow-xl shadow-slate-200/50 border border-slate-100 overflow-hidden relative min-h-[400px]">
-        
         {loading && (
           <div className="absolute inset-0 bg-white/60 backdrop-blur-[2px] z-20 flex flex-col items-center justify-center">
             <Loader2 className="w-10 h-10 text-blue-600 animate-spin mb-2" />
-            <span className="text-slate-600 font-bold">Cargando productos...</span>
+            <span className="text-slate-600 font-bold">Sincronizando inventario...</span>
           </div>
         )}
 
@@ -184,7 +190,7 @@ function Productos() {
             <thead>
               <tr className="bg-slate-50/50 border-b border-slate-100">
                 <th className="px-8 py-5 text-xs font-bold text-slate-400 uppercase tracking-widest">Producto</th>
-                <th className="px-8 py-5 text-xs font-bold text-slate-400 uppercase tracking-widest">Categoría</th>
+                <th className="px-8 py-5 text-xs font-bold text-slate-400 uppercase tracking-widest">Categoría / Prov</th>
                 <th className="px-8 py-5 text-xs font-bold text-slate-400 uppercase tracking-widest text-center">Stock</th>
                 <th className="px-8 py-5 text-xs font-bold text-slate-400 uppercase tracking-widest">Precio</th>
                 <th className="px-8 py-5 text-xs font-bold text-slate-400 uppercase tracking-widest text-right">Acciones</th>
@@ -206,13 +212,18 @@ function Productos() {
                       </div>
                     </td>
                     <td className="px-8 py-5">
-                      <span className="flex items-center gap-1.5 text-slate-600 font-medium text-sm">
-                        <Tag className="w-3.5 h-3.5 opacity-40" /> {p.categoria || 'S/C'}
-                      </span>
+                      <div className="space-y-1">
+                        <span className="flex items-center gap-1.5 text-slate-600 font-medium text-xs">
+                          <Tag className="w-3 h-3 text-blue-400" /> {p.categoria || 'S/C'}
+                        </span>
+                        <span className="flex items-center gap-1.5 text-slate-400 font-medium text-[10px]">
+                          <Truck className="w-3 h-3" /> {p.proveedor || 'Sin Proveedor'}
+                        </span>
+                      </div>
                     </td>
                     <td className="px-8 py-5 text-center">
                       <div className={`inline-block px-3 py-1 rounded-full font-bold text-sm ${Number(p.stock_actual) <= Number(p.stock_minimo) ? 'bg-red-50 text-red-600' : 'bg-green-50 text-green-600'}`}>
-                        {p.stock_actual} <span className="text-[10px] opacity-60 ml-1">/ {p.stock_minimo}</span>
+                        {p.stock_actual} <span className="text-[10px] opacity-60 ml-1">min: {p.stock_minimo}</span>
                       </div>
                     </td>
                     <td className="px-8 py-5 font-bold text-slate-700">
@@ -247,7 +258,6 @@ function Productos() {
           </table>
         </div>
 
-        
         {!loading && filtered.length > 0 && (
           <div className="p-6 bg-slate-50/50 border-t border-slate-100 flex flex-col sm:flex-row justify-between items-center gap-4">
             <p className="text-sm text-slate-500 font-medium">
@@ -261,7 +271,6 @@ function Productos() {
               >
                 <ChevronLeft className="w-5 h-5 text-slate-600" />
               </button>
-              
               <div className="flex gap-1">
                 {[...Array(totalPages)].map((_, i) => (
                   <button
@@ -277,7 +286,6 @@ function Productos() {
                   </button>
                 ))}
               </div>
-
               <button
                 disabled={currentPage === totalPages}
                 onClick={() => setCurrentPage(prev => prev + 1)}
@@ -304,39 +312,60 @@ function Productos() {
             <form onSubmit={handleSubmit} className="space-y-5">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                 <div className="space-y-2">
-                  <label className="text-sm font-bold text-slate-700 ml-1">Código del Producto *</label>
-                  <input required type="text" disabled={!!editingProduct} value={formData.codigo} onChange={(e)=>setFormData({...formData, codigo: e.target.value})} className="w-full px-4 py-3 rounded-2xl border border-slate-200 outline-none focus:ring-4 focus:ring-blue-500/10 disabled:bg-slate-50"/>
+                  <label className="text-sm font-bold text-slate-700 ml-1">Código *</label>
+                  <input required type="text" disabled={!!editingProduct} value={formData.codigo} onChange={(e)=>setFormData({...formData, codigo: e.target.value})} className="w-full px-4 py-3 rounded-2xl border border-slate-200 outline-none focus:ring-4 focus:ring-blue-500/10 disabled:bg-slate-50 uppercase font-mono"/>
                 </div>
                 <div className="space-y-2">
                   <label className="text-sm font-bold text-slate-700 ml-1">Nombre *</label>
                   <input required type="text" value={formData.nombre} onChange={(e)=>setFormData({...formData, nombre: e.target.value})} className="w-full px-4 py-3 rounded-2xl border border-slate-200 outline-none focus:ring-4 focus:ring-blue-500/10"/>
                 </div>
-                <div className="md:col-span-2 space-y-2">
-                  <label className="text-sm font-bold text-slate-700 ml-1">Descripción</label>
-                  <textarea value={formData.descripcion} onChange={(e)=>setFormData({...formData, descripcion: e.target.value})} className="w-full px-4 py-3 rounded-2xl border border-slate-200 outline-none focus:ring-4 focus:ring-blue-500/10 h-24 resize-none"/>
-                </div>
+                
                 <div className="space-y-2">
-                  <label className="text-sm font-bold text-slate-700 ml-1">Categoría</label>
-                  <select value={formData.categoria_id} onChange={(e)=>setFormData({...formData, categoria_id: e.target.value})} className="w-full px-4 py-3 rounded-2xl border border-slate-200 bg-white outline-none focus:ring-4 focus:ring-blue-500/10">
+                  <label className="text-sm font-bold text-slate-700 ml-1">Categoría *</label>
+                  <select required value={formData.categoria_id} onChange={(e)=>setFormData({...formData, categoria_id: e.target.value})} className="w-full px-4 py-3 rounded-2xl border border-slate-200 bg-white outline-none focus:ring-4 focus:ring-blue-500/10">
                     <option value="">Seleccionar...</option>
                     {categorias.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
                   </select>
                 </div>
+
                 <div className="space-y-2">
-                  <label className="text-sm font-bold text-slate-700 ml-1">Ubicación</label>
-                  <input type="text" value={formData.ubicacion} onChange={(e)=>setFormData({...formData, ubicacion: e.target.value})} className="w-full px-4 py-3 rounded-2xl border border-slate-200 outline-none focus:ring-4 focus:ring-blue-500/10"/>
+                  <label className="text-sm font-bold text-slate-700 ml-1">Proveedor *</label>
+                  <select required value={formData.proveedor_id} onChange={(e)=>setFormData({...formData, proveedor_id: e.target.value})} className="w-full px-4 py-3 rounded-2xl border border-slate-200 bg-white outline-none focus:ring-4 focus:ring-blue-500/10">
+                    <option value="">Seleccionar...</option>
+                    {proveedores.map(p => <option key={p.id} value={p.id}>{p.nombre}</option>)}
+                  </select>
                 </div>
+
                 <div className="space-y-2">
                   <label className="text-sm font-bold text-slate-700 ml-1">Stock Actual</label>
                   <input type="number" value={formData.stock_actual} onChange={(e)=>setFormData({...formData, stock_actual: e.target.value})} className="w-full px-4 py-3 rounded-2xl border border-slate-200 outline-none focus:ring-4 focus:ring-blue-500/10"/>
                 </div>
                 <div className="space-y-2">
+                  <label className="text-sm font-bold text-slate-700 ml-1">Stock Mínimo</label>
+                  <input type="number" value={formData.stock_minimo} onChange={(e)=>setFormData({...formData, stock_minimo: e.target.value})} className="w-full px-4 py-3 rounded-2xl border border-slate-200 outline-none focus:ring-4 focus:ring-blue-500/10"/>
+                </div>
+
+                <div className="space-y-2">
                   <label className="text-sm font-bold text-slate-700 ml-1">Precio Unitario ($)</label>
                   <input type="number" step="0.01" value={formData.precio_unitario} onChange={(e)=>setFormData({...formData, precio_unitario: e.target.value})} className="w-full px-4 py-3 rounded-2xl border border-slate-200 outline-none focus:ring-4 focus:ring-blue-500/10"/>
                 </div>
+
+                <div className="space-y-2">
+                  <label className="text-sm font-bold text-slate-700 ml-1">Ubicación Almacén</label>
+                  <div className="relative">
+                    <MapPin className="absolute left-4 top-3.5 w-4 h-4 text-slate-400" />
+                    <input type="text" value={formData.ubicacion} onChange={(e)=>setFormData({...formData, ubicacion: e.target.value})} className="w-full pl-11 pr-4 py-3 rounded-2xl border border-slate-200 outline-none focus:ring-4 focus:ring-blue-500/10"/>
+                  </div>
+                </div>
+
+                <div className="md:col-span-2 space-y-2">
+                  <label className="text-sm font-bold text-slate-700 ml-1">Descripción del Ítem</label>
+                  <textarea value={formData.descripcion} onChange={(e)=>setFormData({...formData, descripcion: e.target.value})} className="w-full px-4 py-3 rounded-2xl border border-slate-200 outline-none focus:ring-4 focus:ring-blue-500/10 h-20 resize-none"/>
+                </div>
               </div>
+
               <button type="submit" className="w-full py-4 bg-blue-600 text-white font-bold rounded-2xl hover:bg-blue-700 shadow-xl shadow-blue-100 transition-all mt-4">
-                {editingProduct ? 'Guardar Cambios' : 'Registrar Producto'}
+                {editingProduct ? 'Guardar Cambios' : 'Registrar Producto en Sistema'}
               </button>
             </form>
           </div>
@@ -348,7 +377,7 @@ function Productos() {
       <ConfirmDialog 
         isOpen={confirmDelete.show} 
         title="¿Eliminar producto?" 
-        message="Esta acción borrará el registro permanentemente del inventario."
+        message="Esta acción lo marcará como inactivo en el inventario."
         onConfirm={handleConfirmDelete} 
         onCancel={() => setConfirmDelete({ show: false, id: null })} 
       />

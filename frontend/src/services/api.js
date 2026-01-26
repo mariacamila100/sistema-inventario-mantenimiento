@@ -54,4 +54,10 @@ export const proveedoresAPI = {
   delete: (id) => api.delete(`/proveedores/${id}`),
 };
 
+// NUEVO SERVICIO:
+export const informesAPI = {
+  getResumen: () => api.get('/informes/resumen'),
+};
+
+
 export default api;
