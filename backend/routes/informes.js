@@ -1,9 +1,11 @@
 const express = require('express');
 const router = express.Router();
 const informesController = require('../controllers/informesController');
-const authMiddleware = require('../middleware/authMiddleware'); // O como se llame tu middleware de protección
 
-// Todas las rutas de informes deben estar protegidas
-router.get('/resumen', authMiddleware, informesController.getResumenInventario);
+// Asegúrate de que los nombres después del punto sean EXACTOS
+router.get('/resumen', informesController.getResumenInventario);
+router.get('/inventario-completo', informesController.getInventarioCompleto);
+router.get('/stock-critico', informesController.getStockMinimo);
+router.get('/proveedores', informesController.getProveedoresResumen);
 
 module.exports = router;

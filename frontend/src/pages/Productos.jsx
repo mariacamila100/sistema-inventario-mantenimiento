@@ -1,9 +1,10 @@
 import { useState, useEffect, useCallback } from 'react';
-import { productosAPI, categoriasAPI, proveedoresAPI } from '../services/api';
-import { 
-  Plus, Edit, Trash2, Search, Package, Tag, 
-  X, CheckCircle2, AlertCircle, Loader2, 
-  ChevronLeft, ChevronRight, AlertTriangle, Truck, MapPin 
+import { productosAPI, categoriasAPI, proveedoresAPI, marcasAPI } from '../services/api'; 
+import {
+  Plus, Edit, Trash2, Search, Package, Tag,
+  X, CheckCircle2, AlertCircle, Loader2,
+  ChevronLeft, ChevronRight, AlertTriangle, Truck, MapPin,
+  Copyright 
 } from 'lucide-react';
 
 // --- COMPONENTE DE NOTIFICACIÓN ---
@@ -13,8 +14,8 @@ const Notification = ({ message, type, onClose }) => {
     return () => clearTimeout(timer);
   }, [onClose]);
 
-  const styles = type === 'success' 
-    ? "bg-emerald-50 border-emerald-100 text-emerald-600" 
+  const styles = type === 'success'
+    ? "bg-emerald-50 border-emerald-100 text-emerald-600"
     : "bg-red-50 border-red-100 text-red-600";
 
   return (
@@ -50,8 +51,9 @@ function Productos() {
   const [productos, setProductos] = useState([]);
   const [categorias, setCategorias] = useState([]);
   const [proveedores, setProveedores] = useState([]);
+  const [marcas, setMarcas] = useState([]); 
   const [loading, setLoading] = useState(true);
-  
+
   const [searchTerm, setSearchTerm] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
@@ -63,21 +65,23 @@ function Productos() {
 
   const [formData, setFormData] = useState({
     codigo: '', nombre: '', descripcion: '', categoria_id: '',
-    proveedor_id: '', stock_actual: 0, stock_minimo: 5,
+    proveedor_id: '', marca_id: '', stock_actual: 0, stock_minimo: 5,
     precio_unitario: 0, ubicacion: '',
   });
 
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
-      const [resProd, resCat, resProv] = await Promise.all([
+      const [resProd, resCat, resProv, resMarc] = await Promise.all([
         productosAPI.getAll(),
         categoriasAPI.getAll(),
-        proveedoresAPI.getAll()
+        proveedoresAPI.getAll(),
+        marcasAPI.getAll() 
       ]);
       setProductos(resProd.data);
       setCategorias(resCat.data);
       setProveedores(resProv.data);
+      setMarcas(resMarc.data);
     } catch (error) {
       setNotification({ message: 'Error al cargar los datos', type: 'error' });
     } finally {
@@ -101,18 +105,20 @@ function Productos() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    // Validación básica de IDs
-    if (!formData.categoria_id || !formData.proveedor_id) {
-      setNotification({ message: 'Selecciona categoría y proveedor', type: 'error' });
+    if (!formData.categoria_id || !formData.proveedor_id || !formData.marca_id) {
+      setNotification({ message: 'Selecciona categoría, proveedor y marca', type: 'error' });
       return;
     }
 
     try {
+      // LIMPIEZA DE PRECIO ANTES DE ENVIAR
+      const precioLimpio = String(formData.precio_unitario).replace(/[.,]/g, '');
+
       const dataToSend = {
         ...formData,
         stock_actual: Number(formData.stock_actual),
         stock_minimo: Number(formData.stock_minimo),
-        precio_unitario: Number(formData.precio_unitario)
+        precio_unitario: Number(precioLimpio) // Dato limpio para la BD
       };
 
       if (editingProduct) {
@@ -145,14 +151,14 @@ function Productos() {
     setEditingProduct(null);
     setFormData({
       codigo: '', nombre: '', descripcion: '', categoria_id: '',
-      proveedor_id: '', stock_actual: 0, stock_minimo: 5,
+      proveedor_id: '', marca_id: '', stock_actual: 0, stock_minimo: 5,
       precio_unitario: 0, ubicacion: '',
     });
   };
 
   return (
     <div className="w-full max-w-7xl mx-auto p-4 md:p-6 lg:p-8 space-y-6">
-      
+
       <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mt-4">
         <div>
           <h1 className="text-3xl md:text-4xl font-black text-slate-900 tracking-tight">Productos</h1>
@@ -190,9 +196,9 @@ function Productos() {
             <thead>
               <tr className="bg-slate-50/50 border-b border-slate-100">
                 <th className="px-8 py-5 text-xs font-bold text-slate-400 uppercase tracking-widest">Producto</th>
-                <th className="px-8 py-5 text-xs font-bold text-slate-400 uppercase tracking-widest">Categoría / Prov</th>
+                <th className="px-8 py-5 text-xs font-bold text-slate-400 uppercase tracking-widest">Categoría / Marca</th>
                 <th className="px-8 py-5 text-xs font-bold text-slate-400 uppercase tracking-widest text-center">Stock</th>
-                <th className="px-8 py-5 text-xs font-bold text-slate-400 uppercase tracking-widest">Precio</th>
+                <th className="px-8 py-5 text-xs font-bold text-slate-400 uppercase tracking-widest">Precio / Total</th>
                 <th className="px-8 py-5 text-xs font-bold text-slate-400 uppercase tracking-widest text-right">Acciones</th>
               </tr>
             </thead>
@@ -217,7 +223,7 @@ function Productos() {
                           <Tag className="w-3 h-3 text-blue-400" /> {p.categoria || 'S/C'}
                         </span>
                         <span className="flex items-center gap-1.5 text-slate-400 font-medium text-[10px]">
-                          <Truck className="w-3 h-3" /> {p.proveedor || 'Sin Proveedor'}
+                          <Copyright className="w-3 h-3 text-slate-300" /> {p.marca || 'Genérico'}
                         </span>
                       </div>
                     </td>
@@ -226,15 +232,25 @@ function Productos() {
                         {p.stock_actual} <span className="text-[10px] opacity-60 ml-1">min: {p.stock_minimo}</span>
                       </div>
                     </td>
-                    <td className="px-8 py-5 font-bold text-slate-700">
-                      ${Number(p.precio_unitario).toLocaleString('es-CO')}
+                    <td className="px-8 py-5">
+                      <p className="font-medium text-slate-700 text-sm">
+                        ${Number(p.precio_unitario).toLocaleString('es-CO')}
+                      </p>
+                      <p className="text-[10px] text-slate-600 font-normal uppercase">
+                        Total: ${(Number(p.stock_actual) * Number(p.precio_unitario)).toLocaleString('es-CO')}
+                      </p>
                     </td>
                     <td className="px-8 py-5">
                       <div className="flex justify-end gap-2">
                         <button onClick={() => {
-                           setEditingProduct(p);
-                           setFormData({...p, categoria_id: p.categoria_id || '', proveedor_id: p.proveedor_id || ''});
-                           setShowModal(true);
+                          setEditingProduct(p);
+                          setFormData({
+                            ...p,
+                            categoria_id: p.categoria_id || '',
+                            proveedor_id: p.proveedor_id || '',
+                            marca_id: p.marca_id || ''
+                          });
+                          setShowModal(true);
                         }} className="p-2 text-blue-600 hover:bg-blue-50 rounded-xl transition-all">
                           <Edit className="w-5 h-5" />
                         </button>
@@ -276,11 +292,10 @@ function Productos() {
                   <button
                     key={i + 1}
                     onClick={() => setCurrentPage(i + 1)}
-                    className={`w-10 h-10 rounded-xl font-bold text-sm transition-all ${
-                      currentPage === i + 1 
-                        ? 'bg-blue-600 text-white shadow-lg shadow-blue-200' 
+                    className={`w-10 h-10 rounded-xl font-bold text-sm transition-all ${currentPage === i + 1
+                        ? 'bg-blue-600 text-white shadow-lg shadow-blue-200'
                         : 'bg-white border border-slate-200 text-slate-400 hover:border-blue-300'
-                    }`}
+                      }`}
                   >
                     {i + 1}
                   </button>
@@ -305,32 +320,40 @@ function Productos() {
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-2xl font-black text-slate-900">{editingProduct ? 'Editar Producto' : 'Nuevo Producto'}</h2>
               <button onClick={closeModal} className="p-2 bg-slate-50 rounded-full text-slate-400 hover:text-red-500 transition-colors">
-                <X className="w-6 h-6"/>
+                <X className="w-6 h-6" />
               </button>
             </div>
-            
+
             <form onSubmit={handleSubmit} className="space-y-5">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                 <div className="space-y-2">
                   <label className="text-sm font-bold text-slate-700 ml-1">Código *</label>
-                  <input required type="text" disabled={!!editingProduct} value={formData.codigo} onChange={(e)=>setFormData({...formData, codigo: e.target.value})} className="w-full px-4 py-3 rounded-2xl border border-slate-200 outline-none focus:ring-4 focus:ring-blue-500/10 disabled:bg-slate-50 uppercase font-mono"/>
+                  <input required type="text" disabled={!!editingProduct} value={formData.codigo} onChange={(e) => setFormData({ ...formData, codigo: e.target.value })} className="w-full px-4 py-3 rounded-2xl border border-slate-200 outline-none focus:ring-4 focus:ring-blue-500/10 disabled:bg-slate-50 uppercase font-mono" />
                 </div>
                 <div className="space-y-2">
                   <label className="text-sm font-bold text-slate-700 ml-1">Nombre *</label>
-                  <input required type="text" value={formData.nombre} onChange={(e)=>setFormData({...formData, nombre: e.target.value})} className="w-full px-4 py-3 rounded-2xl border border-slate-200 outline-none focus:ring-4 focus:ring-blue-500/10"/>
+                  <input required type="text" value={formData.nombre} onChange={(e) => setFormData({ ...formData, nombre: e.target.value })} className="w-full px-4 py-3 rounded-2xl border border-slate-200 outline-none focus:ring-4 focus:ring-blue-500/10" />
                 </div>
-                
+
                 <div className="space-y-2">
                   <label className="text-sm font-bold text-slate-700 ml-1">Categoría *</label>
-                  <select required value={formData.categoria_id} onChange={(e)=>setFormData({...formData, categoria_id: e.target.value})} className="w-full px-4 py-3 rounded-2xl border border-slate-200 bg-white outline-none focus:ring-4 focus:ring-blue-500/10">
+                  <select required value={formData.categoria_id} onChange={(e) => setFormData({ ...formData, categoria_id: e.target.value })} className="w-full px-4 py-3 rounded-2xl border border-slate-200 bg-white outline-none focus:ring-4 focus:ring-blue-500/10">
                     <option value="">Seleccionar...</option>
                     {categorias.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
                   </select>
                 </div>
 
                 <div className="space-y-2">
+                  <label className="text-sm font-bold text-slate-700 ml-1">Marca *</label>
+                  <select required value={formData.marca_id} onChange={(e) => setFormData({ ...formData, marca_id: e.target.value })} className="w-full px-4 py-3 rounded-2xl border border-slate-200 bg-white outline-none focus:ring-4 focus:ring-blue-500/10">
+                    <option value="">Seleccionar Marca...</option>
+                    {marcas.map(m => <option key={m.id} value={m.id}>{m.nombre}</option>)}
+                  </select>
+                </div>
+
+                <div className="space-y-2">
                   <label className="text-sm font-bold text-slate-700 ml-1">Proveedor *</label>
-                  <select required value={formData.proveedor_id} onChange={(e)=>setFormData({...formData, proveedor_id: e.target.value})} className="w-full px-4 py-3 rounded-2xl border border-slate-200 bg-white outline-none focus:ring-4 focus:ring-blue-500/10">
+                  <select required value={formData.proveedor_id} onChange={(e) => setFormData({ ...formData, proveedor_id: e.target.value })} className="w-full px-4 py-3 rounded-2xl border border-slate-200 bg-white outline-none focus:ring-4 focus:ring-blue-500/10">
                     <option value="">Seleccionar...</option>
                     {proveedores.map(p => <option key={p.id} value={p.id}>{p.nombre}</option>)}
                   </select>
@@ -338,29 +361,53 @@ function Productos() {
 
                 <div className="space-y-2">
                   <label className="text-sm font-bold text-slate-700 ml-1">Stock Actual</label>
-                  <input type="number" value={formData.stock_actual} onChange={(e)=>setFormData({...formData, stock_actual: e.target.value})} className="w-full px-4 py-3 rounded-2xl border border-slate-200 outline-none focus:ring-4 focus:ring-blue-500/10"/>
-                </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-bold text-slate-700 ml-1">Stock Mínimo</label>
-                  <input type="number" value={formData.stock_minimo} onChange={(e)=>setFormData({...formData, stock_minimo: e.target.value})} className="w-full px-4 py-3 rounded-2xl border border-slate-200 outline-none focus:ring-4 focus:ring-blue-500/10"/>
+                  <input
+                    type="number"
+                    disabled={!!editingProduct} 
+                    value={formData.stock_actual}
+                    onChange={(e) => setFormData({ ...formData, stock_actual: e.target.value })}
+                    className={`w-full px-4 py-3 rounded-2xl border border-slate-200 outline-none focus:ring-4 focus:ring-blue-500/10 ${!!editingProduct ? 'bg-slate-100 text-slate-500 cursor-not-allowed' : ''}`}
+                  />
+                  {editingProduct && <p className="text-[10px] text-blue-500 font-bold ml-1 italic">* Ajustar vía Movimientos</p>}
                 </div>
 
                 <div className="space-y-2">
+                  <label className="text-sm font-bold text-slate-700 ml-1">Stock Mínimo</label>
+                  <input type="number" value={formData.stock_minimo} onChange={(e) => setFormData({ ...formData, stock_minimo: e.target.value })} className="w-full px-4 py-3 rounded-2xl border border-slate-200 outline-none focus:ring-4 focus:ring-blue-500/10" />
+                </div>
+
+                {/* --- CAMBIO AQUÍ: VALIDACIÓN DE PRECIO UNITARIO --- */}
+                <div className="space-y-2">
                   <label className="text-sm font-bold text-slate-700 ml-1">Precio Unitario ($)</label>
-                  <input type="number" step="0.01" value={formData.precio_unitario} onChange={(e)=>setFormData({...formData, precio_unitario: e.target.value})} className="w-full px-4 py-3 rounded-2xl border border-slate-200 outline-none focus:ring-4 focus:ring-blue-500/10"/>
+                  <input 
+                    type="text" 
+                    placeholder="Ej: 100000"
+                    value={formData.precio_unitario} 
+                    onChange={(e) => {
+                      // Solo permite números, elimina cualquier otro signo
+                      const val = e.target.value.replace(/\D/g, '');
+                      setFormData({ ...formData, precio_unitario: val });
+                    }} 
+                    onKeyDown={(e) => {
+                      // Bloquea físicamente el punto y la coma
+                      if (e.key === '.' || e.key === ',') e.preventDefault();
+                    }}
+                    className="w-full px-4 py-3 rounded-2xl border border-slate-200 outline-none focus:ring-4 focus:ring-blue-500/10 font-normal" 
+                  />
+                  <p className="text-[10px] text-slate-400 ml-2 italic">Solo números, sin puntos.</p>
                 </div>
 
                 <div className="space-y-2">
                   <label className="text-sm font-bold text-slate-700 ml-1">Ubicación Almacén</label>
                   <div className="relative">
                     <MapPin className="absolute left-4 top-3.5 w-4 h-4 text-slate-400" />
-                    <input type="text" value={formData.ubicacion} onChange={(e)=>setFormData({...formData, ubicacion: e.target.value})} className="w-full pl-11 pr-4 py-3 rounded-2xl border border-slate-200 outline-none focus:ring-4 focus:ring-blue-500/10"/>
+                    <input type="text" value={formData.ubicacion} onChange={(e) => setFormData({ ...formData, ubicacion: e.target.value })} className="w-full pl-11 pr-4 py-3 rounded-2xl border border-slate-200 outline-none focus:ring-4 focus:ring-blue-500/10" />
                   </div>
                 </div>
 
                 <div className="md:col-span-2 space-y-2">
                   <label className="text-sm font-bold text-slate-700 ml-1">Descripción del Ítem</label>
-                  <textarea value={formData.descripcion} onChange={(e)=>setFormData({...formData, descripcion: e.target.value})} className="w-full px-4 py-3 rounded-2xl border border-slate-200 outline-none focus:ring-4 focus:ring-blue-500/10 h-20 resize-none"/>
+                  <textarea value={formData.descripcion} onChange={(e) => setFormData({ ...formData, descripcion: e.target.value })} className="w-full px-4 py-3 rounded-2xl border border-slate-200 outline-none focus:ring-4 focus:ring-blue-500/10 h-20 resize-none" />
                 </div>
               </div>
 
@@ -373,13 +420,13 @@ function Productos() {
       )}
 
       {notification && <Notification {...notification} onClose={() => setNotification(null)} />}
-      
-      <ConfirmDialog 
-        isOpen={confirmDelete.show} 
-        title="¿Eliminar producto?" 
+
+      <ConfirmDialog
+        isOpen={confirmDelete.show}
+        title="¿Eliminar producto?"
         message="Esta acción lo marcará como inactivo en el inventario."
-        onConfirm={handleConfirmDelete} 
-        onCancel={() => setConfirmDelete({ show: false, id: null })} 
+        onConfirm={handleConfirmDelete}
+        onCancel={() => setConfirmDelete({ show: false, id: null })}
       />
     </div>
   );

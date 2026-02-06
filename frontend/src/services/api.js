@@ -1,9 +1,14 @@
 import axios from 'axios';
 
-const RAILWAY_API_URL = 'https://sistema-inventario-mantenimiento-production.up.railway.app'; 
+/**
+ * Lógica de URL Dinámica:
+ * 1. Si el proyecto tiene una variable VITE_API_URL en el .env, la usa.
+ * 2. Si no existe, intenta usar localhost (para tus pruebas en PC).
+ */
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
 
 const api = axios.create({
-  baseURL: `${RAILWAY_API_URL}/api`, 
+  baseURL: API_BASE_URL,
   headers: {
     'Content-Type': 'application/json',
   },
@@ -54,10 +59,17 @@ export const proveedoresAPI = {
   delete: (id) => api.delete(`/proveedores/${id}`),
 };
 
-// NUEVO SERVICIO:
+// --- NUEVO SERVICIO DE MARCAS ---
+export const marcasAPI = {
+  getAll: () => api.get('/marcas'),
+  create: (data) => api.post('/marcas', data),
+  update: (id, data) => api.put(`/marcas/${id}`, data),
+  delete: (id) => api.delete(`/marcas/${id}`),
+};
+
+// SERVICIO DE INFORMES
 export const informesAPI = {
   getResumen: () => api.get('/informes/resumen'),
 };
-
 
 export default api;

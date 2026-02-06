@@ -1,12 +1,13 @@
 import { useState } from 'react';
-import { LogIn, User, Lock, Loader2, UserPlus } from 'lucide-react';
-import { Link, useNavigate } from 'react-router-dom'; // Importamos Link
+import { LogIn, User, Lock, Loader2, UserPlus, Eye, EyeOff } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
 import { authAPI } from '../services/api';
 
 function Login({ onLoginSuccess }) {
   const [formData, setFormData] = useState({ username: '', password: '' });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [showPassword, setShowPassword] = useState(false); // Estado para el ojito
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
@@ -16,10 +17,9 @@ function Login({ onLoginSuccess }) {
     
     try {
       const response = await authAPI.login(formData);
-      // Extraemos token y datos del usuario de la respuesta
       const { token, user } = response.data;
       onLoginSuccess(token, user);
-      navigate('/'); // Redirigir al home tras éxito
+      navigate('/');
     } catch (err) {
       setError(err.response?.data?.message || 'Error al conectar con el servidor');
     } finally {
@@ -67,11 +67,19 @@ function Login({ onLoginSuccess }) {
               <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5" />
               <input 
                 required
-                type="password" 
-                className="w-full pl-12 pr-4 py-4 rounded-2xl border border-slate-200 outline-none focus:ring-4 focus:ring-blue-500/10 transition-all placeholder:text-slate-300"
+                type={showPassword ? "text" : "password"} 
+                className="w-full pl-12 pr-12 py-4 rounded-2xl border border-slate-200 outline-none focus:ring-4 focus:ring-blue-500/10 transition-all placeholder:text-slate-300"
                 placeholder="••••••••"
                 onChange={(e) => setFormData({...formData, password: e.target.value})}
               />
+              {/* Botón del ojito */}
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-blue-600 transition-colors p-1"
+              >
+                {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+              </button>
             </div>
           </div>
 
@@ -84,7 +92,6 @@ function Login({ onLoginSuccess }) {
           </button>
         </form>
 
-        {/* --- SECCIÓN DE REGISTRO --- */}
         <div className="mt-8 pt-6 border-t border-slate-50 text-center">
           <p className="text-slate-500 text-sm font-medium mb-4">¿Aún no tienes una cuenta?</p>
           <Link 

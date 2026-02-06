@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { UserPlus, User, Mail, Lock, ShieldCheck, Loader2, ArrowLeft } from 'lucide-react';
+import { UserPlus, User, Mail, Lock, ShieldCheck, Loader2, ArrowLeft, Eye, EyeOff } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { authAPI } from '../services/api';
 
@@ -7,6 +7,8 @@ function Registro() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [showPassword, setShowPassword] = useState(false); // Estado para el ojito
+  
   const [formData, setFormData] = useState({
     username: '',
     nombre_completo: '',
@@ -21,7 +23,6 @@ function Registro() {
     setError('');
     try {
       await authAPI.register(formData);
-      // Tras registro exitoso, enviamos al login
       navigate('/login');
     } catch (err) {
       setError(err.response?.data?.error || 'Error al crear la cuenta');
@@ -34,7 +35,6 @@ function Registro() {
     <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4 font-sans">
       <div className="bg-white w-full max-w-md rounded-[3rem] shadow-2xl shadow-blue-100 p-8 md:p-12 border border-slate-100 animate-in fade-in zoom-in duration-300">
         
-        {/* Header con botón volver opcional */}
         <div className="text-center mb-8">
           <div className="inline-flex p-4 bg-blue-600 rounded-3xl text-white mb-4 shadow-lg shadow-blue-200">
             <UserPlus className="w-8 h-8" />
@@ -87,16 +87,23 @@ function Registro() {
             />
           </div>
 
-          {/* Password */}
+          {/* Password con funcionalidad de "Ojito" */}
           <div className="relative">
             <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5" />
             <input 
               required
-              type="password" 
-              className="w-full pl-12 pr-4 py-4 rounded-2xl border border-slate-200 outline-none focus:ring-4 focus:ring-blue-500/10 transition-all placeholder:text-slate-300"
+              type={showPassword ? "text" : "password"} 
+              className="w-full pl-12 pr-12 py-4 rounded-2xl border border-slate-200 outline-none focus:ring-4 focus:ring-blue-500/10 transition-all placeholder:text-slate-300"
               placeholder="Contraseña"
               onChange={(e) => setFormData({...formData, password: e.target.value})}
             />
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-blue-600 transition-colors p-1"
+            >
+              {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+            </button>
           </div>
 
           <button 

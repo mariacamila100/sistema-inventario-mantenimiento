@@ -1,88 +1,70 @@
 const db = require('../config/database');
 
-exports.getResumenInventario = async (req, res) => {
-    try {
-        const { fechaInicio, fechaFin } = req.query;
+const informesController = {
+    getInventarioCompleto: async (req, res) => {
+        try {
+            const query = `
+                SELECT 
+                    p.codigo AS 'CÓDIGO', 
+                    p.nombre AS 'PRODUCTO', 
+                    IFNULL(m.nombre, '—') AS 'MARCA', 
+                    IFNULL(c.nombre, '—') AS 'CATEGORÍA', 
+                    p.stock_actual AS 'STOCK', 
+                    ROUND(p.precio_unitario, 0) AS 'PRECIO UNITARIO', 
+                    ROUND((p.stock_actual * p.precio_unitario), 0) AS 'VALOR TOTAL'
+                FROM productos p
+                LEFT JOIN marcas m ON p.marca_id = m.id
+                LEFT JOIN categorias c ON p.categoria_id = c.id
+                ORDER BY p.nombre ASC`;
 
-        // 1. Resumen General (Stock actual y valorización)
-        const [stats] = await db.query(`
-            SELECT 
-                COUNT(*) as total_productos,
-                CAST(IFNULL(SUM(stock_actual), 0) AS UNSIGNED) as stock_total,
-                CAST(IFNULL(SUM(stock_actual * precio_unitario), 0) AS DECIMAL(12,2)) as valor_inventario
-            FROM productos
-        `);
+            const [rows] = await db.query(query);
+            const granTotal = rows.reduce((acc, item) => acc + parseFloat(item['VALOR TOTAL'] || 0), 0);
 
-        // 2. Stock crítico
-        const [criticos] = await db.query(`
-            SELECT nombre, stock_actual, stock_minimo 
-            FROM productos 
-            WHERE stock_actual <= stock_minimo
-            LIMIT 5
-        `);
-// Obtener historial detallado de un producto específico
-exports.getHistorialProducto = async (req, res) => {
-    try {
-        const { productoId, fechaInicio, fechaFin } = req.query;
-        
-        let query = `
-            SELECT 
-                m.id,
-                p.nombre as producto,
-                m.tipo,
-                m.cantidad,
-                m.motivo,
-                m.fecha,
-                u.nombre as realizado_por
-            FROM movimientos m
-            JOIN productos p ON m.producto_id = p.id
-            LEFT JOIN usuarios u ON m.usuario_id = u.id
-            WHERE 1=1
-        `;
-        
-        const params = [];
-
-        if (productoId) {
-            query += " AND m.producto_id = ?";
-            params.push(productoId);
+            res.json({ detalles: rows, sumatoriaTotal: granTotal });
+        } catch (error) {
+            console.error("Error en informe:", error);
+            res.status(500).json({ error: 'Error al generar el informe' });
         }
-        if (fechaInicio && fechaFin) {
-            query += " AND m.fecha BETWEEN ? AND ?";
-            params.push(fechaInicio, fechaFin);
+    },
+
+    getStockMinimo: async (req, res) => {
+        try {
+            const query = `
+                SELECT nombre AS 'NOMBRE', stock_actual AS 'STOCK ACTUAL', 
+                       stock_minimo AS 'STOCK MÍNIMO', 
+                       (stock_minimo - stock_actual) as 'FALTANTE'
+                FROM productos 
+                WHERE stock_actual <= stock_minimo
+                ORDER BY (stock_minimo - stock_actual) DESC`;
+            const [rows] = await db.query(query);
+            res.json(rows);
+        } catch (error) {
+            res.status(500).json({ error: 'Error al generar alertas' });
         }
+    },
 
-        query += " ORDER BY m.fecha DESC";
+    // ESTA ES LA FUNCIÓN QUE FALTABA PARA QUE NO DÉ ERROR
+    getProveedoresResumen: async (req, res) => {
+        try {
+            const query = `
+                SELECT nombre AS 'PROVEEDOR', contacto AS 'CONTACTO', 
+                       telefono AS 'TELÉFONO', email AS 'EMAIL' 
+                FROM proveedores ORDER BY nombre ASC`;
+            const [rows] = await db.query(query);
+            res.json(rows);
+        } catch (error) {
+            res.status(500).json({ error: 'Error al obtener proveedores' });
+        }
+    },
 
-        const [movimientos] = await db.query(query, params);
-        res.json(movimientos);
-    } catch (err) {
-        res.status(500).json({ error: err.message });
+    getResumenInventario: async (req, res) => {
+        try {
+            const [resumen] = await db.query('SELECT SUM(stock_actual * precio_unitario) as valor_inventario FROM productos');
+            res.json({ resumen: resumen[0] });
+        } catch (error) {
+            res.status(500).json({ error: error.message });
+        }
     }
 };
-        // 3. Movimientos filtrados por fecha
-        // Si no hay fechas, usamos el último mes
-        const queryMovimientos = `
-            SELECT 
-                DATE_FORMAT(fecha, '%d/%m') as etiqueta,
-                COUNT(CASE WHEN tipo = 'entrada' THEN 1 END) as entradas,
-                COUNT(CASE WHEN tipo = 'salida' THEN 1 END) as salidas
-            FROM movimientos
-            WHERE fecha BETWEEN 
-                IFNULL(?, DATE_SUB(NOW(), INTERVAL 30 DAY)) 
-                AND IFNULL(?, NOW())
-            GROUP BY etiqueta, fecha
-            ORDER BY fecha ASC
-        `;
 
-        const [movimientos] = await db.query(queryMovimientos, [fechaInicio, fechaFin]);
-
-        res.json({
-            resumen: stats[0],
-            stockCritico: criticos || [],
-            grafica: movimientos || []
-        });
-    } catch (err) {
-        console.error("Error en Informes:", err);
-        res.status(500).json({ error: err.message });
-    }
-};
+module.exports = informesController;
