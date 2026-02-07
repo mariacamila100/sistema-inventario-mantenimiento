@@ -38,7 +38,6 @@ function Movimientos() {
   const [searchProduct, setSearchProduct] = useState('');
   const [isSelectOpen, setIsSelectOpen] = useState(false);
 
-  // Paginación
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(5);
 
@@ -85,7 +84,6 @@ function Movimientos() {
     );
   }, [productos, searchProduct]);
 
-  // Lógica de Paginación
   const totalPages = Math.ceil(filtered.length / itemsPerPage);
   const indexOfLastItem = currentPage * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
@@ -93,8 +91,6 @@ function Movimientos() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
-    // Validación rápida de UX antes de enviar al servidor
     const productoSeleccionado = productos.find(p => p.id === Number(formData.producto_id));
     if (formData.tipo === 'salida' && productoSeleccionado && Number(formData.cantidad) > productoSeleccionado.stock_actual) {
       setNotification({ 
@@ -142,7 +138,7 @@ function Movimientos() {
         </div>
         <button
           onClick={() => setShowModal(true)}
-          className="w-full sm:w-auto flex items-center justify-center gap-2 bg-blue-600 text-white px-6 py-3 rounded-2xl font-bold hover:bg-blue-700 shadow-lg shadow-blue-200 transition-all active:scale-95"
+          className="w-full sm:w-auto flex items-center justify-center gap-2 bg-[#003366] text-white px-6 py-3 rounded-2xl font-bold hover:bg-[#001a33] shadow-lg shadow-blue-900/10 transition-all active:scale-95"
         >
           <Plus className="w-5 h-5" /> Nuevo Registro
         </button>
@@ -155,14 +151,14 @@ function Movimientos() {
           placeholder="Buscar movimientos..."
           value={searchTerm}
           onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }}
-          className="w-full pl-12 pr-4 py-3 bg-white border border-slate-200 rounded-2xl shadow-sm focus:ring-4 focus:ring-blue-500/10 outline-none transition-all"
+          className="w-full pl-12 pr-4 py-3 bg-white border border-slate-200 rounded-2xl shadow-sm focus:ring-4 focus:ring-[#003366]/5 outline-none transition-all"
         />
       </div>
 
       <div className="bg-white rounded-[2rem] shadow-xl shadow-slate-200/50 border border-slate-100 overflow-hidden relative min-h-[400px]">
         {loading && (
           <div className="absolute inset-0 bg-white/60 backdrop-blur-[2px] z-20 flex flex-col items-center justify-center">
-            <Loader2 className="w-10 h-10 text-blue-600 animate-spin mb-2" />
+            <Loader2 className="w-10 h-10 text-[#003366] animate-spin mb-2" />
             <span className="text-slate-600 font-bold">Cargando datos...</span>
           </div>
         )}
@@ -183,17 +179,17 @@ function Movimientos() {
                 currentItems.map((mov) => (
                   <tr key={mov.id} className="hover:bg-slate-50 transition-colors">
                     <td className="px-8 py-5">
-                      <div className="flex items-center gap-2 text-slate-500 text-sm">
+                      <div className="flex items-center gap-2 text-slate-500 text-xs font-medium">
                         <Calendar className="w-4 h-4 text-slate-300" />
                         {new Date(mov.fecha).toLocaleDateString()}
                       </div>
                     </td>
                     <td className="px-8 py-5">
                       <div className="flex flex-col">
-                        <span className="text-sm font-bold text-slate-500 uppercase">{mov.producto_nombre}</span>
+                        <span className="text-sm font-bold text-slate-700 uppercase">{mov.producto_nombre}</span>
                         <div className="flex items-center gap-1 mt-0.5">
                           <FileText className="w-3 h-3 text-slate-400" />
-                          <span className="text-[10px] font-bold text-slate-500 uppercase tracking-tight">
+                          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tight">
                             {mov.numero_documento || mov.motivo}
                           </span>
                         </div>
@@ -201,14 +197,14 @@ function Movimientos() {
                     </td>
                     <td className="px-8 py-5 text-center">
                       <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black uppercase ${
-                        mov.tipo === 'entrada' ? 'bg-emerald-100 text-emerald-700' : 'bg-orange-100 text-orange-700'
+                        mov.tipo === 'entrada' ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' : 'bg-orange-50 text-orange-600 border border-orange-100'
                       }`}>
                         {mov.tipo === 'entrada' ? <ArrowUp className="w-3 h-3"/> : <ArrowDown className="w-3 h-3"/>}
                         {mov.tipo}
                       </span>
                     </td>
-                    <td className="px-8 py-5 text-center text-sm font-normal text-slate-700">{mov.cantidad}</td>
-                    <td className="px-8 py-5 text-right text-[11px] font-normal text-slate-600 uppercase">
+                    <td className="px-8 py-5 text-center text-sm font-bold text-slate-700">{mov.cantidad}</td>
+                    <td className="px-8 py-5 text-right text-[11px] font-medium text-slate-400 uppercase">
                       {mov.username || 'Admin'}
                     </td>
                   </tr>
@@ -245,7 +241,9 @@ function Movimientos() {
                     key={i + 1}
                     onClick={() => setCurrentPage(i + 1)}
                     className={`w-10 h-10 rounded-xl font-bold text-sm transition-all ${
-                      currentPage === i + 1 ? 'bg-blue-600 text-white shadow-lg shadow-blue-200' : 'bg-white border border-slate-200 text-slate-400 hover:border-blue-300'
+                      currentPage === i + 1 
+                        ? 'bg-[#003366] text-white shadow-lg shadow-blue-900/20' 
+                        : 'bg-white border border-slate-200 text-slate-400 hover:border-[#003366]'
                     }`}
                   >
                     {i + 1}
@@ -268,33 +266,33 @@ function Movimientos() {
         <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center z-[120] p-4">
           <div className="bg-white rounded-[2.5rem] p-6 md:p-10 w-full max-w-2xl shadow-2xl animate-in zoom-in duration-200 max-h-[90vh] overflow-y-auto">
             <div className="flex justify-between items-center mb-6">
-              <h2 className="text-2xl font-black text-slate-900">Nuevo Movimiento</h2>
+              <h2 className="text-2xl font-black text-slate-900">Nuevo Registro</h2>
               <button onClick={closeModal} className="p-2 bg-slate-50 rounded-full text-slate-400 hover:text-red-500 transition-colors">
                 <X className="w-6 h-6"/>
               </button>
             </div>
             
-            <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-5">
-              <div className="md:col-span-2 space-y-2 relative">
-                <label className="text-sm font-bold text-slate-700 ml-1">Producto *</label>
+            <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="md:col-span-2 space-y-1.5 relative">
+                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1">Producto *</label>
                 <div 
                   onClick={() => setIsSelectOpen(!isSelectOpen)}
-                  className="w-full px-4 py-3 rounded-2xl border border-slate-200 flex justify-between items-center cursor-pointer bg-slate-50 hover:border-blue-300 transition-all"
+                  className="w-full px-4 py-3 rounded-xl border border-slate-200 flex justify-between items-center cursor-pointer bg-slate-50 hover:border-[#003366]/30 transition-all"
                 >
-                  <span className={formData.producto_id ? "text-slate-900 font-bold" : "text-slate-400"}>
+                  <span className={formData.producto_id ? "text-slate-900 font-bold text-sm" : "text-slate-400 text-sm"}>
                     {formData.producto_id ? productos.find(p => p.id === Number(formData.producto_id))?.nombre : "Seleccionar producto..."}
                   </span>
                   <ChevronDown className={`w-5 h-5 text-slate-400 transition-transform ${isSelectOpen ? 'rotate-180' : ''}`} />
                 </div>
 
                 {isSelectOpen && (
-                  <div className="absolute w-full mt-2 bg-white border border-slate-100 shadow-2xl rounded-2xl z-[130] overflow-hidden">
+                  <div className="absolute w-full mt-2 bg-white border border-slate-100 shadow-2xl rounded-2xl z-[130] overflow-hidden animate-in fade-in slide-in-from-top-2">
                     <div className="p-3 border-b border-slate-50 bg-slate-50/50">
                       <input 
                         autoFocus
                         type="text" 
                         placeholder="Filtrar por nombre..."
-                        className="w-full px-4 py-2 bg-white border border-slate-200 rounded-xl text-sm outline-none"
+                        className="w-full px-4 py-2 bg-white border border-slate-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-[#003366]/10"
                         value={searchProduct}
                         onChange={(e) => setSearchProduct(e.target.value)}
                       />
@@ -308,10 +306,10 @@ function Movimientos() {
                             setIsSelectOpen(false);
                             setSearchProduct('');
                           }}
-                          className="px-4 py-3 hover:bg-blue-600 hover:text-white cursor-pointer group transition-colors"
+                          className="px-4 py-3 hover:bg-[#003366] hover:text-white cursor-pointer group transition-colors"
                         >
                           <p className="font-bold text-sm">{prod.nombre}</p>
-                          <p className="text-[10px] uppercase opacity-70">Stock: {prod.stock_actual}</p>
+                          <p className="text-[10px] uppercase opacity-70">Stock actual: {prod.stock_actual}</p>
                         </div>
                       ))}
                     </div>
@@ -319,44 +317,44 @@ function Movimientos() {
                 )}
               </div>
 
-              <div className="space-y-2">
-                <label className="text-sm font-bold text-slate-700 ml-1">Tipo</label>
-                <select value={formData.tipo} onChange={(e) => setFormData({...formData, tipo: e.target.value})} className="w-full px-4 py-3 rounded-2xl border border-slate-200 font-bold bg-white outline-none focus:ring-4 focus:ring-blue-500/10">
-                  <option value="entrada">🟢 Entrada</option>
-                  <option value="salida">🔴 Salida</option>
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1">Tipo</label>
+                <select value={formData.tipo} onChange={(e) => setFormData({...formData, tipo: e.target.value})} className="w-full px-4 py-3 rounded-xl border border-slate-200 font-bold bg-white outline-none focus:ring-4 focus:ring-[#003366]/5 text-sm">
+                  <option value="entrada">🟢 ENTRADA</option>
+                  <option value="salida">🔴 SALIDA</option>
                 </select>
               </div>
 
-              <div className="space-y-2">
-                <label className="text-sm font-bold text-slate-700 ml-1">Cantidad *</label>
-                <input type="number" required min="1" value={formData.cantidad} onChange={(e) => setFormData({...formData, cantidad: e.target.value})} className="w-full px-4 py-3 rounded-2xl border border-slate-200 font-bold outline-none focus:ring-4 focus:ring-blue-500/10" />
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1">Cantidad *</label>
+                <input type="number" required min="1" value={formData.cantidad} onChange={(e) => setFormData({...formData, cantidad: e.target.value})} className="w-full px-4 py-3 rounded-xl border border-slate-200 font-bold outline-none focus:ring-4 focus:ring-[#003366]/5 text-sm" />
               </div>
 
-              <div className="space-y-2">
-                <label className="text-sm font-bold text-slate-700 ml-1">N° Documento</label>
-                <input type="text" value={formData.numero_documento} onChange={(e) => setFormData({...formData, numero_documento: e.target.value})} placeholder="Ej: FAC-101" className="w-full px-4 py-3 rounded-2xl border border-slate-200 outline-none focus:ring-4 focus:ring-blue-500/10" />
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1">N° Documento</label>
+                <input type="text" value={formData.numero_documento} onChange={(e) => setFormData({...formData, numero_documento: e.target.value})} placeholder="Ej: FAC-101" className="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none focus:ring-4 focus:ring-[#003366]/5 text-sm font-medium" />
               </div>
 
-              <div className="space-y-2">
-                <label className="text-sm font-bold text-slate-700 ml-1">Proveedor</label>
-                <select value={formData.proveedor_id} onChange={(e) => setFormData({...formData, proveedor_id: e.target.value})} className="w-full px-4 py-3 rounded-2xl border border-slate-200 bg-white outline-none focus:ring-4 focus:ring-blue-500/10">
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1">Proveedor</label>
+                <select value={formData.proveedor_id} onChange={(e) => setFormData({...formData, proveedor_id: e.target.value})} className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-white outline-none focus:ring-4 focus:ring-[#003366]/5 text-sm font-medium">
                   <option value="">No aplica</option>
                   {proveedores.map(p => <option key={p.id} value={p.id}>{p.nombre}</option>)}
                 </select>
               </div>
 
-              <div className="md:col-span-2 space-y-2">
-                <label className="text-sm font-bold text-slate-700 ml-1">Motivo *</label>
-                <input type="text" required value={formData.motivo} onChange={(e) => setFormData({...formData, motivo: e.target.value})} placeholder="Ej: Compra de mercadería" className="w-full px-4 py-3 rounded-2xl border border-slate-200 outline-none focus:ring-4 focus:ring-blue-500/10" />
+              <div className="md:col-span-2 space-y-1.5">
+                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1">Motivo *</label>
+                <input type="text" required value={formData.motivo} onChange={(e) => setFormData({...formData, motivo: e.target.value})} placeholder="Ej: Reposición de stock" className="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none focus:ring-4 focus:ring-[#003366]/5 text-sm font-medium" />
               </div>
 
-              <div className="md:col-span-2 space-y-2">
-                <label className="text-sm font-bold text-slate-700 ml-1">Observaciones</label>
-                <textarea rows="2" value={formData.observaciones} onChange={(e) => setFormData({...formData, observaciones: e.target.value})} className="w-full px-4 py-3 rounded-2xl border border-slate-200 outline-none resize-none focus:ring-4 focus:ring-blue-500/10"></textarea>
+              <div className="md:col-span-2 space-y-1.5">
+                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1">Observaciones</label>
+                <textarea rows="2" value={formData.observaciones} onChange={(e) => setFormData({...formData, observaciones: e.target.value})} className="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none resize-none focus:ring-4 focus:ring-[#003366]/5 text-sm font-medium"></textarea>
               </div>
 
-              <button type="submit" className="md:col-span-2 py-4 bg-blue-600 text-white font-bold rounded-2xl hover:bg-blue-700 shadow-xl shadow-blue-100 transition-all active:scale-[0.98]">
-                REGISTRAR MOVIMIENTO
+              <button type="submit" className="md:col-span-2 py-4 bg-[#003366] text-white font-black rounded-xl hover:bg-[#001a33] shadow-lg shadow-blue-900/10 transition-all active:scale-[0.98] mt-2 uppercase tracking-widest text-sm">
+                Registrar Movimiento
               </button>
             </form>
           </div>

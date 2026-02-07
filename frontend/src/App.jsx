@@ -9,6 +9,7 @@ import Proveedores from './pages/Proveedores';
 import Login from './pages/Login';
 import Registro from './pages/Registro';
 import Informes from './pages/Informes'; 
+import Marcas from './pages/Marcas';
 
 // --- COMPONENTE DE RUTA PROTEGIDA ---
 const ProtectedRoute = ({ children }) => {
@@ -25,7 +26,11 @@ function App() {
   useEffect(() => {
     const savedUser = localStorage.getItem('user');
     if (savedUser) {
-      setUser(JSON.parse(savedUser));
+      try {
+        setUser(JSON.parse(savedUser));
+      } catch (e) {
+        console.error("Error parseando usuario", e);
+      }
     }
   }, [isAuthenticated]);
 
@@ -45,9 +50,12 @@ function App() {
 
   return (
     <Router>
-      <div className="flex min-h-screen bg-slate-50">
+      {/* Añadimos bg-slate-50 aquí para que toda la pantalla tenga 
+        color de fondo siempre, evitando el flash blanco.
+      */}
+      <div className="flex min-h-screen bg-slate-50 w-full overflow-x-hidden">
         
-        {/* Navbar con datos del usuario y función de logout */}
+        {/* Navbar lateral/superior */}
         {isAuthenticated && (
           <Navbar 
             onLogout={handleLogout} 
@@ -55,16 +63,20 @@ function App() {
           />
         )}
 
-        <main className={`flex-1 transition-all duration-300 ${isAuthenticated ? 'lg:p-8 p-4 mt-16 lg:mt-0' : 'p-0'}`}>
+        {/* CAMBIOS REALIZADOS:
+          1. Eliminada la clase 'transition-all duration-300' (Culpable del movimiento extraño).
+          2. Si no está autenticado, el main ocupa el 100% sin paddings extra.
+        */}
+        <main className={`flex-1 flex flex-col ${isAuthenticated ? 'lg:p-8 p-4 mt-16 lg:mt-0' : 'w-full'}`}>
           <Routes>
             {/* Rutas Públicas */}
             <Route
               path="/login"
-              element={!isAuthenticated ? <Login onLoginSuccess={handleLogin} /> : <Navigate to="/" />}
+              element={!isAuthenticated ? <Login onLoginSuccess={handleLogin} /> : <Navigate to="/" replace />}
             />
             <Route
               path="/registro"
-              element={!isAuthenticated ? <Registro /> : <Navigate to="/" />}
+              element={!isAuthenticated ? <Registro /> : <Navigate to="/" replace />}
             />
 
             {/* Rutas Protegidas */}
@@ -73,12 +85,11 @@ function App() {
             <Route path="/movimientos" element={<ProtectedRoute><Movimientos /></ProtectedRoute>} />
             <Route path="/categorias" element={<ProtectedRoute><Categorias /></ProtectedRoute>} />
             <Route path="/proveedores" element={<ProtectedRoute><Proveedores /></ProtectedRoute>} />
-            
-            {/* NUEVA RUTA DE INFORMES AÑADIDA AQUÍ */}
+            <Route path="/marcas" element={<ProtectedRoute><Marcas /></ProtectedRoute>} />
             <Route path="/informes" element={<ProtectedRoute><Informes /></ProtectedRoute>} />
 
             {/* Redirección por defecto */}
-            <Route path="*" element={<Navigate to={isAuthenticated ? "/" : "/login"} />} />
+            <Route path="*" element={<Navigate to={isAuthenticated ? "/" : "/login"} replace />} />
           </Routes>
         </main>
       </div>

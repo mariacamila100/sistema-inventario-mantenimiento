@@ -1,21 +1,21 @@
 const db = require('../config/database');
 
-// Obtener todas las categorías
+// Obtener solo categorías activas
 exports.getCategorias = async (req, res) => {
     try {
-        const [results] = await db.query('SELECT * FROM categorias ORDER BY nombre');
+        const [results] = await db.query("SELECT * FROM categorias WHERE estado = 'activo' ORDER BY nombre");
         res.json(results);
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
 };
 
-// Crear una categoría
+// Crear una categoría (con estado activo por defecto)
 exports.createCategoria = async (req, res) => {
     const { nombre, descripcion } = req.body;
     try {
         const [result] = await db.query(
-            'INSERT INTO categorias (nombre, descripcion) VALUES (?, ?)',
+            'INSERT INTO categorias (nombre, descripcion, estado) VALUES (?, ?, "activo")',
             [nombre, descripcion]
         );
         res.status(201).json({ id: result.insertId, nombre, descripcion });
@@ -39,13 +39,15 @@ exports.updateCategoria = async (req, res) => {
     }
 };
 
-// Eliminar una categoría
+// DESACTIVAR categoría (Soft Delete)
 exports.deleteCategoria = async (req, res) => {
     const { id } = req.params;
     try {
-        await db.query('DELETE FROM categorias WHERE id = ?', [id]);
-        res.json({ message: 'Categoría eliminada con éxito' });
+        // Cambiamos DELETE por UPDATE de estado
+        await db.query("UPDATE categorias SET estado = 'inactivo' WHERE id = ?", [id]);
+        res.json({ message: 'Categoría desactivada con éxito' });
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        // Error común: la categoría está siendo usada por productos (si tienes llaves foráneas)
+        res.status(500).json({ error: "No se puede desactivar: hay productos vinculados a esta categoría" });
     }
 };

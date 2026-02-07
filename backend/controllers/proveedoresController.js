@@ -1,21 +1,21 @@
 const db = require('../config/database');
 
-// Obtener todos los proveedores
+// Obtener solo proveedores activos
 exports.getProveedores = async (req, res) => {
     try {
-        const [results] = await db.query('SELECT * FROM proveedores ORDER BY nombre');
+        const [results] = await db.query("SELECT * FROM proveedores WHERE estado = 'activo' ORDER BY nombre");
         res.json(results);
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
 };
 
-// Crear un proveedor
+// Crear un proveedor (asegurando estado activo)
 exports.createProveedor = async (req, res) => {
     const { nombre, contacto, telefono, email, direccion } = req.body;
     try {
         const [result] = await db.query(
-            'INSERT INTO proveedores (nombre, contacto, telefono, email, direccion) VALUES (?, ?, ?, ?, ?)',
+            'INSERT INTO proveedores (nombre, contacto, telefono, email, direccion, estado) VALUES (?, ?, ?, ?, ?, "activo")',
             [nombre, contacto, telefono, email, direccion]
         );
         res.status(201).json({ id: result.insertId, ...req.body });
@@ -39,12 +39,13 @@ exports.updateProveedor = async (req, res) => {
     }
 };
 
-// Eliminar un proveedor
+// DESACTIVAR proveedor (Soft Delete)
 exports.deleteProveedor = async (req, res) => {
     const { id } = req.params;
     try {
-        await db.query('DELETE FROM proveedores WHERE id = ?', [id]);
-        res.json({ message: 'Proveedor eliminado con éxito' });
+        // En lugar de DELETE, hacemos UPDATE
+        await db.query("UPDATE proveedores SET estado = 'inactivo' WHERE id = ?", [id]);
+        res.json({ message: 'Proveedor desactivado con éxito' });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
