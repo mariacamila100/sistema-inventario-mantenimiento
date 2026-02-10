@@ -1,9 +1,9 @@
 import { useState, useEffect, useCallback } from 'react';
 import { marcasAPI } from '../services/api';
-import { 
-  Plus, Edit, Trash2, Search, Copyright, Calendar, 
-  X, CheckCircle2, AlertCircle, Loader2, 
-  ChevronLeft, ChevronRight, AlertTriangle 
+import {
+  Plus, Edit, Trash2, Search, Copyright, Calendar,
+  X, CheckCircle2, AlertCircle, Loader2,
+  ChevronLeft, ChevronRight, AlertTriangle
 } from 'lucide-react';
 
 // --- COMPONENTE CONFIRM DIALOG COMPACTO ---
@@ -39,8 +39,8 @@ const Notification = ({ message, type, onClose }) => {
     return () => clearTimeout(timer);
   }, [onClose]);
 
-  const styles = type === 'success' 
-    ? "bg-emerald-50 border-emerald-100 text-emerald-600" 
+  const styles = type === 'success'
+    ? "bg-emerald-50 border-emerald-100 text-emerald-600"
     : "bg-red-50 border-red-100 text-red-600";
 
   return (
@@ -61,8 +61,7 @@ function Marcas() {
   const [notification, setNotification] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(5);
-  
-  // Estado para el diálogo de confirmación
+
   const [confirmData, setConfirmData] = useState({ isOpen: false, id: null });
 
   const [formData, setFormData] = useState({
@@ -146,7 +145,7 @@ function Marcas() {
 
   return (
     <div className="w-full max-w-7xl mx-auto p-4 md:p-6 lg:p-8 space-y-6">
-      
+
       <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mt-4">
         <div>
           <h1 className="text-3xl md:text-4xl font-black text-slate-900 tracking-tight">Marcas</h1>
@@ -179,40 +178,41 @@ function Marcas() {
           </div>
         )}
 
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[800px] border-collapse text-left">
+        <div className="overflow-x-auto w-full">
+          {/* Se eliminó min-w-[800px] para que el CSS responsive tome control total */}
+          <table className="w-full border-collapse text-left table-responsive">
             <thead>
               <tr className="bg-slate-50/50 border-b border-slate-100">
                 <th className="px-8 py-5 text-xs font-bold text-slate-400 uppercase tracking-widest">Nombre</th>
                 <th className="px-8 py-5 text-xs font-bold text-slate-400 uppercase tracking-widest">Descripción</th>
-                <th className="px-8 py-5 text-xs font-bold text-slate-400 uppercase tracking-widest">Fecha Registro</th>
+                <th className="px-8 py-5 text-xs font-bold text-slate-400 uppercase tracking-widest whitespace-nowrap">Fecha Registro</th>
                 <th className="px-8 py-5 text-xs font-bold text-slate-400 uppercase tracking-widest text-right">Acciones</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-50">
               {currentItems.length > 0 ? (
                 currentItems.map((marca) => (
-                  <tr key={marca.id} className="hover:bg-slate-50 transition-colors">
-                    <td className="px-8 py-5">
-                      <div className="flex items-center gap-3">
-                        <div className="p-2 bg-slate-100 rounded-xl text-[#003366]">
+                  <tr key={marca.id} className="hover:bg-slate-50 transition-colors responsive-tr">
+                    <td className="px-8 py-5 responsive-td" data-label="Nombre">
+                      <div className="flex items-center gap-3 sm:justify-start justify-end">
+                        <div className="p-2 bg-slate-100 rounded-xl text-[#003366] shrink-0">
                           <Copyright className="w-5 h-5" />
                         </div>
-                        <div className="font-bold text-slate-700 uppercase text-sm tracking-tight">{marca.nombre}</div>
+                        <div className="font-bold text-slate-700 uppercase text-sm tracking-tight whitespace-nowrap">{marca.nombre}</div>
                       </div>
                     </td>
-                    <td className="px-8 py-5">
-                      <p className="text-slate-500 text-xs font-medium max-w-xs truncate" title={marca.descripcion}>
+                    <td className="px-8 py-5 responsive-td" data-label="Descripción">
+                      <p className="text-slate-500 text-xs font-medium max-w-[200px] sm:max-w-xs truncate ml-auto sm:ml-0" title={marca.descripcion}>
                         {marca.descripcion || 'Sin descripción'}
                       </p>
                     </td>
-                    <td className="px-8 py-5">
-                      <div className="flex items-center gap-2 text-slate-400 text-xs font-medium">
-                        <Calendar className="w-4 h-4 text-slate-300" />
+                    <td className="px-8 py-5 responsive-td" data-label="Fecha Registro">
+                      <div className="flex items-center gap-2 text-slate-400 text-xs font-medium whitespace-nowrap justify-end sm:justify-start">
+                        <Calendar className="w-4 h-4 text-slate-300 shrink-0" />
                         {marca.created_at ? new Date(marca.created_at).toLocaleDateString() : 'N/A'}
                       </div>
                     </td>
-                    <td className="px-8 py-5">
+                    <td className="px-8 py-5 responsive-td text-right" data-label="Acciones">
                       <div className="flex justify-end gap-2">
                         <button onClick={() => handleEdit(marca)} className="p-2 text-[#003366] hover:bg-slate-100 rounded-xl transition-all">
                           <Edit className="w-5 h-5" />
@@ -237,23 +237,41 @@ function Marcas() {
           </table>
         </div>
 
+        {/* Paginación Minimalista y Limpia */}
         {!loading && filtered.length > 0 && (
           <div className="p-6 bg-slate-50/50 border-t border-slate-100 flex flex-col sm:flex-row justify-between items-center gap-4">
+
+            {/* Contador de registros (Mantiene tu texto original) */}
             <p className="text-sm text-slate-500 font-medium">
-              Mostrando <span className="text-slate-900 font-bold">{indexOfFirstItem + 1}</span> a <span className="text-slate-900 font-bold">{Math.min(indexOfLastItem, filtered.length)}</span> de {filtered.length} marcas
+              Mostrando <span className="text-slate-900 font-bold">{indexOfFirstItem + 1}</span> a <span className="text-slate-900 font-bold">{Math.min(indexOfLastItem, filtered.length)}</span> de {filtered.length} movimientos
             </p>
-            <div className="flex items-center gap-2">
-              <button disabled={currentPage === 1} onClick={() => setCurrentPage(prev => prev - 1)} className="p-2 rounded-xl bg-white border border-slate-200 disabled:opacity-30 hover:bg-slate-100 transition-all shadow-sm">
+
+            {/* Controles de navegación compactos */}
+            <div className="flex items-center gap-3">
+              {/* Flecha Anterior */}
+              <button
+                disabled={currentPage === 1}
+                onClick={() => setCurrentPage(prev => prev - 1)}
+                className="p-2.5 rounded-xl bg-white border border-slate-200 disabled:opacity-30 hover:bg-slate-50 transition-all shadow-sm active:scale-90"
+              >
                 <ChevronLeft className="w-5 h-5 text-slate-600" />
               </button>
-              <div className="flex gap-1">
-                {[...Array(totalPages)].map((_, i) => (
-                  <button key={i + 1} onClick={() => setCurrentPage(i + 1)} className={`w-10 h-10 rounded-xl font-bold text-sm transition-all ${currentPage === i + 1 ? 'bg-[#003366] text-white' : 'bg-white border text-slate-400'}`}>
-                    {i + 1}
-                  </button>
-                ))}
+
+              {/* Cuadrito de Número Actual y Total */}
+              <div className="flex items-center gap-3 px-1">
+                <div className="w-10 h-10 rounded-xl bg-[#003366] text-white flex items-center justify-center font-bold text-sm shadow-lg shadow-blue-900/20">
+                  {currentPage}
+                </div>
+                <span className="text-slate-300 font-light text-xl">/</span>
+                <span className="text-sm font-bold text-slate-500">{totalPages}</span>
               </div>
-              <button disabled={currentPage === totalPages} onClick={() => setCurrentPage(prev => prev + 1)} className="p-2 rounded-xl bg-white border border-slate-200 disabled:opacity-30 hover:bg-slate-100 transition-all shadow-sm">
+
+              {/* Flecha Siguiente */}
+              <button
+                disabled={currentPage === totalPages}
+                onClick={() => setCurrentPage(prev => prev + 1)}
+                className="p-2.5 rounded-xl bg-white border border-slate-200 disabled:opacity-30 hover:bg-slate-50 transition-all shadow-sm active:scale-90"
+              >
                 <ChevronRight className="w-5 h-5 text-slate-600" />
               </button>
             </div>
@@ -266,16 +284,16 @@ function Marcas() {
           <div className="bg-white rounded-[2.5rem] p-6 md:p-10 w-full max-w-md shadow-2xl animate-in zoom-in duration-200">
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-2xl font-black text-slate-900 uppercase tracking-tight">{editingMarca ? 'Editar Marca' : 'Nueva Marca'}</h2>
-              <button onClick={closeModal} className="p-2 bg-slate-50 rounded-full text-slate-400 hover:text-red-500 transition-colors"><X className="w-6 h-6"/></button>
+              <button onClick={closeModal} className="p-2 bg-slate-50 rounded-full text-slate-400 hover:text-red-500 transition-colors"><X className="w-6 h-6" /></button>
             </div>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-1.5">
                 <label className="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1">Nombre de la Marca *</label>
-                <input required type="text" value={formData.nombre} onChange={(e) => setFormData({...formData, nombre: e.target.value})} placeholder="Ej: LG, York, Samsung..." className="w-full px-4 py-2.5 rounded-xl border border-slate-200 outline-none focus:ring-4 focus:ring-[#003366]/5 transition-all text-sm font-medium" />
+                <input required type="text" value={formData.nombre} onChange={(e) => setFormData({ ...formData, nombre: e.target.value })} placeholder="Ej: LG, York, Samsung..." className="w-full px-4 py-2.5 rounded-xl border border-slate-200 outline-none focus:ring-4 focus:ring-[#003366]/5 transition-all text-sm font-medium" />
               </div>
               <div className="space-y-1.5">
                 <label className="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1">Descripción</label>
-                <textarea value={formData.descripcion} onChange={(e) => setFormData({...formData, descripcion: e.target.value})} placeholder="Información adicional del fabricante..." className="w-full px-4 py-2.5 rounded-xl border border-slate-200 outline-none focus:ring-4 focus:ring-[#003366]/5 transition-all h-28 resize-none text-sm font-medium" />
+                <textarea value={formData.descripcion} onChange={(e) => setFormData({ ...formData, descripcion: e.target.value })} placeholder="Información adicional del fabricante..." className="w-full px-4 py-2.5 rounded-xl border border-slate-200 outline-none focus:ring-4 focus:ring-[#003366]/5 transition-all h-28 resize-none text-sm font-medium" />
               </div>
               <button type="submit" className="w-full py-3.5 bg-[#003366] text-white font-bold rounded-xl hover:bg-[#001a33] shadow-lg shadow-blue-900/10 transition-all mt-2 active:scale-[0.98]">
                 {editingMarca ? 'Guardar Cambios' : 'Registrar Marca'}
@@ -285,8 +303,7 @@ function Marcas() {
         </div>
       )}
 
-      {/* DIÁLOGO DE CONFIRMACIÓN INTEGRADO */}
-      <ConfirmDialog 
+      <ConfirmDialog
         isOpen={confirmData.isOpen}
         title="¿Desactivar marca?"
         message="La marca no aparecerá en nuevos registros pero se mantendrá en el historial."

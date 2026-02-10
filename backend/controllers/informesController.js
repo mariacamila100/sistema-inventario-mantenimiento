@@ -15,6 +15,7 @@ const informesController = {
                 FROM productos p
                 LEFT JOIN marcas m ON p.marca_id = m.id
                 LEFT JOIN categorias c ON p.categoria_id = c.id
+                WHERE p.estado = 'Activo'
                 ORDER BY p.nombre ASC`;
 
             const [rows] = await db.query(query);
@@ -35,6 +36,7 @@ const informesController = {
                        (stock_minimo - stock_actual) as 'FALTANTE'
                 FROM productos 
                 WHERE stock_actual <= stock_minimo
+                AND estado = 'Activo'
                 ORDER BY (stock_minimo - stock_actual) DESC`;
             const [rows] = await db.query(query);
             res.json(rows);
@@ -43,7 +45,6 @@ const informesController = {
         }
     },
 
-    // ESTA ES LA FUNCIÓN QUE FALTABA PARA QUE NO DÉ ERROR
     getProveedoresResumen: async (req, res) => {
         try {
             const query = `
@@ -59,7 +60,7 @@ const informesController = {
 
     getResumenInventario: async (req, res) => {
         try {
-            const [resumen] = await db.query('SELECT SUM(stock_actual * precio_unitario) as valor_inventario FROM productos');
+            const [resumen] = await db.query('SELECT SUM(stock_actual * precio_unitario) as valor_inventario FROM productos WHERE estado = "Activo"');
             res.json({ resumen: resumen[0] });
         } catch (error) {
             res.status(500).json({ error: error.message });

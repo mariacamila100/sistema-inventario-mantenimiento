@@ -176,7 +176,7 @@ function Productos() {
         </button>
       </header>
 
-      <div className="relative max-w-md">
+      <div className="relative w-full max-w-md">
         <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5" />
         <input
           type="text"
@@ -191,13 +191,13 @@ function Productos() {
         {loading && (
           <div className="absolute inset-0 bg-white/60 backdrop-blur-[2px] z-20 flex flex-col items-center justify-center">
             <Loader2 className="w-10 h-10 text-[#003366] animate-spin mb-2" />
-            <span className="text-slate-600 font-bold">Sincronizando inventario...</span>
+            <span className="text-slate-600 font-bold text-center px-4">Sincronizando inventario...</span>
           </div>
         )}
 
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[800px] text-left">
-            <thead>
+        <div className="overflow-x-auto w-full">
+          <table className="w-full text-left border-collapse">
+            <thead className="hidden lg:table-header-group">
               <tr className="bg-slate-50/50 border-b border-slate-100">
                 <th className="px-8 py-5 text-xs font-bold text-slate-400 uppercase tracking-widest">Producto</th>
                 <th className="px-8 py-5 text-xs font-bold text-slate-400 uppercase tracking-widest">Categoría / Marca</th>
@@ -206,62 +206,86 @@ function Productos() {
                 <th className="px-8 py-5 text-xs font-bold text-slate-400 uppercase tracking-widest text-right">Acciones</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-50">
+            <tbody className="divide-y divide-slate-100">
               {currentItems.length > 0 ? (
                 currentItems.map((p) => (
-                  <tr key={p.id} className="hover:bg-slate-50 transition-colors">
-                    <td className="px-8 py-5">
+                  <tr key={p.id} className="hover:bg-slate-50 transition-colors flex flex-col lg:table-row p-4 sm:p-6 lg:p-0 border-b lg:border-none">
+
+                    {/* Producto */}
+                    <td className="lg:px-8 lg:py-5 py-2">
                       <div className="flex items-center gap-3">
-                        <div className="p-2 bg-slate-100 rounded-xl text-[#003366]">
+                        <div className="p-2 bg-slate-100 rounded-xl text-[#003366] shrink-0">
                           <Package className="w-5 h-5" />
                         </div>
-                        <div>
-                          <p className="font-bold text-slate-800 uppercase text-sm tracking-tight">{p.nombre}</p>
+                        <div className="min-w-0">
+                          <p className="font-bold text-slate-800 uppercase text-sm tracking-tight truncate">{p.nombre}</p>
                           <p className="text-[10px] text-slate-400 font-mono font-bold tracking-wider">{p.codigo}</p>
                         </div>
                       </div>
                     </td>
-                    <td className="px-8 py-5">
-                      <div className="space-y-1">
-                        <span className="flex items-center gap-1.5 text-slate-600 font-medium text-xs">
-                          <Tag className="w-3 h-3 text-[#003366]/60" /> {p.categoria || 'S/C'}
-                        </span>
-                        <span className="flex items-center gap-1.5 text-slate-400 font-medium text-[10px]">
-                          <Copyright className="w-3 h-3 text-slate-300" /> {p.marca || 'Genérico'}
-                        </span>
+
+                    {/* Categoría / Marca */}
+                    <td className="lg:px-8 lg:py-5 py-2">
+                      <div className="flex flex-row lg:flex-col items-center lg:items-start justify-between lg:justify-center gap-1">
+                        <span className="text-[10px] font-black text-slate-300 uppercase tracking-widest lg:hidden">Detalles</span>
+                        <div className="flex flex-col lg:gap-1 text-right lg:text-left">
+                          <span className="flex items-center lg:justify-start justify-end gap-1.5 text-slate-600 font-medium text-xs">
+                            <Tag className="w-3 h-3 text-[#003366]/60 hidden lg:block" /> {p.categoria || 'S/C'}
+                          </span>
+                          <span className="flex items-center lg:justify-start justify-end gap-1.5 text-slate-400 font-medium text-[10px]">
+                            <Copyright className="w-3 h-3 text-slate-300 hidden lg:block" /> {p.marca || 'Genérico'}
+                          </span>
+                        </div>
                       </div>
                     </td>
-                    <td className="px-8 py-5 text-center">
-                      <div className={`inline-block px-3 py-1 rounded-full font-bold text-sm ${Number(p.stock_actual) <= Number(p.stock_minimo) ? 'bg-red-50 text-red-600 border border-red-100' : 'bg-emerald-50 text-emerald-600 border border-emerald-100'}`}>
-                        {p.stock_actual} <span className="text-[10px] opacity-60 ml-1">min: {p.stock_minimo}</span>
+
+                    {/* Stock */}
+                    <td className="lg:px-8 lg:py-5 py-2">
+                      <div className="flex items-center justify-between lg:justify-center">
+                        <span className="text-[10px] font-black text-slate-300 uppercase tracking-widest lg:hidden">Stock</span>
+                        <div className={`px-3 py-1 rounded-full font-bold text-sm ${Number(p.stock_actual) <= Number(p.stock_minimo) ? 'bg-red-50 text-red-600 border border-red-100' : 'bg-emerald-50 text-emerald-600 border border-emerald-100'}`}>
+                          {p.stock_actual} <span className="text-[10px] opacity-60 ml-1">min: {p.stock_minimo}</span>
+                        </div>
                       </div>
                     </td>
-                    <td className="px-8 py-5">
-                      <p className="font-bold text-slate-700 text-sm">
-                        ${Number(p.precio_unitario).toLocaleString('es-CO')}
-                      </p>
-                      <p className="text-[10px] text-slate-400 font-normal uppercase">
-                        Total: ${(Number(p.stock_actual) * Number(p.precio_unitario)).toLocaleString('es-CO')}
-                      </p>
+
+                    {/* Precio */}
+                    <td className="lg:px-8 lg:py-5 py-2">
+                      <div className="flex flex-row lg:flex-col items-center lg:items-start justify-between lg:justify-center">
+                        <span className="text-[10px] font-black text-slate-300 uppercase tracking-widest lg:hidden">Precio</span>
+                        <div className="text-right lg:text-left">
+                          <p className="font-bold text-slate-700 text-sm">
+                            ${Number(p.precio_unitario).toLocaleString('es-CO')}
+                          </p>
+                          <p className="text-[10px] text-slate-400 font-normal uppercase hidden lg:block">
+                            Total: ${(Number(p.stock_actual) * Number(p.precio_unitario)).toLocaleString('es-CO')}
+                          </p>
+                        </div>
+                      </div>
                     </td>
-                    <td className="px-8 py-5">
-                      <div className="flex justify-end gap-2">
-                        <button onClick={() => {
-                          setEditingProduct(p);
-                          setFormData({
-                            ...p,
-                            precio_unitario: p.precio_unitario.toString(),
-                            categoria_id: p.categoria_id || '',
-                            proveedor_id: p.proveedor_id || '',
-                            marca_id: p.marca_id || ''
-                          });
-                          setShowModal(true);
-                        }} className="p-2 text-[#003366] hover:bg-slate-100 rounded-xl transition-all">
-                          <Edit className="w-5 h-5" />
-                        </button>
-                        <button onClick={() => setConfirmDelete({ show: true, id: p.id })} className="p-2 text-red-500 hover:bg-red-50 rounded-xl transition-all">
-                          <Trash2 className="w-5 h-5" />
-                        </button>
+
+                    {/* Acciones */}
+                    <td className="lg:px-8 lg:py-5 py-4 lg:py-5 mt-2 lg:mt-0 border-t lg:border-none border-slate-50">
+                      <div className="flex justify-between lg:justify-end items-center gap-2">
+                        <span className="text-[10px] font-black text-slate-300 uppercase tracking-widest lg:hidden">Opciones</span>
+                        <div className="flex gap-1">
+                          <button onClick={() => {
+                            setEditingProduct(p);
+                            setFormData({
+                              ...p,
+                              precio_unitario: p.precio_unitario.toString(),
+                              categoria_id: p.categoria_id || '',
+                              proveedor_id: p.proveedor_id || '',
+                              marca_id: p.marca_id || ''
+                            });
+                            setShowModal(true);
+                          }} className="p-2 text-[#003366] hover:bg-slate-100 rounded-xl transition-all">
+                            <Edit className="w-5 h-5" />
+                          </button>
+                          <button onClick={() => setConfirmDelete({ show: true, id: p.id })} className="p-2 text-red-500 hover:bg-red-50 rounded-xl transition-all">
+                            <Trash2 className="w-5 h-5" />
+                          </button>
+                        </div>
                       </div>
                     </td>
                   </tr>
@@ -278,24 +302,41 @@ function Productos() {
             </tbody>
           </table>
         </div>
-
+        {/* Paginación Minimalista y Limpia */}
         {!loading && filtered.length > 0 && (
           <div className="p-6 bg-slate-50/50 border-t border-slate-100 flex flex-col sm:flex-row justify-between items-center gap-4">
+
+            {/* Contador de registros (Mantiene tu texto original) */}
             <p className="text-sm text-slate-500 font-medium">
-              Mostrando <span className="text-slate-900 font-bold">{indexOfFirstItem + 1}</span> a <span className="text-slate-900 font-bold">{Math.min(indexOfLastItem, filtered.length)}</span> de {filtered.length} productos
+              Mostrando <span className="text-slate-900 font-bold">{indexOfFirstItem + 1}</span> a <span className="text-slate-900 font-bold">{Math.min(indexOfLastItem, filtered.length)}</span> de {filtered.length} movimientos
             </p>
-            <div className="flex items-center gap-2">
-              <button disabled={currentPage === 1} onClick={() => setCurrentPage(prev => prev - 1)} className="p-2 rounded-xl bg-white border border-slate-200 disabled:opacity-30 hover:bg-slate-100 transition-all shadow-sm">
+
+            {/* Controles de navegación compactos */}
+            <div className="flex items-center gap-3">
+              {/* Flecha Anterior */}
+              <button
+                disabled={currentPage === 1}
+                onClick={() => setCurrentPage(prev => prev - 1)}
+                className="p-2.5 rounded-xl bg-white border border-slate-200 disabled:opacity-30 hover:bg-slate-50 transition-all shadow-sm active:scale-90"
+              >
                 <ChevronLeft className="w-5 h-5 text-slate-600" />
               </button>
-              <div className="flex gap-1">
-                {[...Array(totalPages)].map((_, i) => (
-                  <button key={i + 1} onClick={() => setCurrentPage(i + 1)} className={`w-10 h-10 rounded-xl font-bold text-sm transition-all ${currentPage === i + 1 ? 'bg-[#003366] text-white shadow-lg shadow-blue-900/20' : 'bg-white border border-slate-200 text-slate-400 hover:border-[#003366]'}`}>
-                    {i + 1}
-                  </button>
-                ))}
+
+              {/* Cuadrito de Número Actual y Total */}
+              <div className="flex items-center gap-3 px-1">
+                <div className="w-10 h-10 rounded-xl bg-[#003366] text-white flex items-center justify-center font-bold text-sm shadow-lg shadow-blue-900/20">
+                  {currentPage}
+                </div>
+                <span className="text-slate-300 font-light text-xl">/</span>
+                <span className="text-sm font-bold text-slate-500">{totalPages}</span>
               </div>
-              <button disabled={currentPage === totalPages} onClick={() => setCurrentPage(prev => prev + 1)} className="p-2 rounded-xl bg-white border border-slate-200 disabled:opacity-30 hover:bg-slate-100 transition-all shadow-sm">
+
+              {/* Flecha Siguiente */}
+              <button
+                disabled={currentPage === totalPages}
+                onClick={() => setCurrentPage(prev => prev + 1)}
+                className="p-2.5 rounded-xl bg-white border border-slate-200 disabled:opacity-30 hover:bg-slate-50 transition-all shadow-sm active:scale-90"
+              >
                 <ChevronRight className="w-5 h-5 text-slate-600" />
               </button>
             </div>
@@ -304,16 +345,16 @@ function Productos() {
       </div>
 
       {showModal && (
-        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center z-[120] p-4">
-          <div className="bg-white rounded-[2.5rem] p-6 md:p-10 w-full max-w-2xl shadow-2xl animate-in zoom-in duration-200 max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center z-[120] p-2 sm:p-4">
+          <div className="bg-white rounded-[2rem] sm:rounded-[2.5rem] p-5 sm:p-8 lg:p-10 w-full max-w-2xl shadow-2xl animate-in zoom-in duration-200 max-h-[95vh] overflow-y-auto">
             <div className="flex justify-between items-center mb-6">
-              <h2 className="text-2xl font-black text-slate-900 uppercase tracking-tight">{editingProduct ? 'Editar Producto' : 'Nuevo Producto'}</h2>
+              <h2 className="text-xl sm:text-2xl font-black text-slate-900 uppercase tracking-tight">{editingProduct ? 'Editar Producto' : 'Nuevo Producto'}</h2>
               <button onClick={closeModal} className="p-2 bg-slate-50 rounded-full text-slate-400 hover:text-red-500 transition-colors">
                 <X className="w-6 h-6" />
               </button>
             </div>
 
-            <form onSubmit={handleSubmit} className="space-y-5">
+            <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-1.5">
                   <label className="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1">Código *</label>
@@ -393,15 +434,15 @@ function Productos() {
             </form>
           </div>
         </div>
-      )} {/* <--- AQUÍ faltaba esta llave para cerrar el {showModal && (...)} */}
+      )}
 
       {/* DIÁLOGO DE CONFIRMACIÓN INTEGRADO */}
       <ConfirmDialog
-        isOpen={confirmDelete.show} // Ajustado para usar confirmDelete.show
+        isOpen={confirmDelete.show}
         title="¿Desactivar Producto?"
         message="El producto no se eliminará permanentemente, pero no aparecerá en el inventario activo. ¿Deseas continuar?"
         onConfirm={handleConfirmDelete}
-        onCancel={() => setConfirmDelete({ show: false, id: null })} // Ajustado para usar setConfirmDelete
+        onCancel={() => setConfirmDelete({ show: false, id: null })}
       />
 
       {notification && (

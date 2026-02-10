@@ -1,8 +1,8 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { movimientosAPI, productosAPI, proveedoresAPI } from '../services/api';
-import { 
-  Plus, ArrowUp, ArrowDown, Search, X, 
-  CheckCircle2, AlertCircle, Loader2, 
+import {
+  Plus, ArrowUp, ArrowDown, Search, X,
+  CheckCircle2, AlertCircle, Loader2,
   ChevronLeft, ChevronRight, Calendar, ChevronDown,
   FileText
 } from 'lucide-react';
@@ -13,8 +13,8 @@ const Notification = ({ message, type, onClose }) => {
     return () => clearTimeout(timer);
   }, [onClose]);
 
-  const styles = type === 'success' 
-    ? "bg-emerald-50 border-emerald-100 text-emerald-600" 
+  const styles = type === 'success'
+    ? "bg-emerald-50 border-emerald-100 text-emerald-600"
     : "bg-red-50 border-red-100 text-red-600";
 
   return (
@@ -78,7 +78,7 @@ function Movimientos() {
   );
 
   const filteredProducts = useMemo(() => {
-    return productos.filter(p => 
+    return productos.filter(p =>
       p.nombre.toLowerCase().includes(searchProduct.toLowerCase()) ||
       p.codigo?.toLowerCase().includes(searchProduct.toLowerCase())
     );
@@ -93,9 +93,9 @@ function Movimientos() {
     e.preventDefault();
     const productoSeleccionado = productos.find(p => p.id === Number(formData.producto_id));
     if (formData.tipo === 'salida' && productoSeleccionado && Number(formData.cantidad) > productoSeleccionado.stock_actual) {
-      setNotification({ 
-        message: `Stock insuficiente. Disponible: ${productoSeleccionado.stock_actual}`, 
-        type: 'error' 
+      setNotification({
+        message: `Stock insuficiente. Disponible: ${productoSeleccionado.stock_actual}`,
+        type: 'error'
       });
       return;
     }
@@ -111,9 +111,9 @@ function Movimientos() {
       loadData();
       closeModal();
     } catch (error) {
-      setNotification({ 
-        message: error.response?.data?.error || 'Error al registrar', 
-        type: 'error' 
+      setNotification({
+        message: error.response?.data?.error || 'Error al registrar',
+        type: 'error'
       });
     }
   };
@@ -130,7 +130,7 @@ function Movimientos() {
 
   return (
     <div className="w-full max-w-7xl mx-auto p-4 md:p-6 lg:p-8 space-y-6">
-      
+
       <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mt-4">
         <div>
           <h1 className="text-3xl md:text-4xl font-black text-slate-900 tracking-tight">Movimientos</h1>
@@ -151,7 +151,7 @@ function Movimientos() {
           placeholder="Buscar movimientos..."
           value={searchTerm}
           onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }}
-          className="w-full pl-12 pr-4 py-3 bg-white border border-slate-200 rounded-2xl shadow-sm focus:ring-4 focus:ring-[#003366]/5 outline-none transition-all"
+          className="w-full pl-12 pr-4 py-3 bg-white border border-slate-200 rounded-2xl shadow-sm focus:ring-4 focus:ring-[#003366]/5 outline-none transition-all font-medium text-slate-600"
         />
       </div>
 
@@ -163,49 +163,55 @@ function Movimientos() {
           </div>
         )}
 
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[800px] border-collapse text-left">
+        <div className="overflow-x-auto w-full">
+          {/* Se aplicó la clase table-responsive igual que en Marcas */}
+          <table className="w-full border-collapse text-left table-responsive">
             <thead>
               <tr className="bg-slate-50/50 border-b border-slate-100">
                 <th className="px-8 py-5 text-xs font-bold text-slate-400 uppercase tracking-widest">Fecha</th>
                 <th className="px-8 py-5 text-xs font-bold text-slate-400 uppercase tracking-widest">Detalle</th>
-                <th className="px-8 py-5 text-xs font-bold text-slate-400 uppercase tracking-widest text-center">Tipo</th>
-                <th className="px-8 py-5 text-xs font-bold text-slate-400 uppercase tracking-widest text-center">Cantidad</th>
+                <th className="px-8 py-5 text-xs font-bold text-slate-400 uppercase tracking-widest text-center sm:text-left">Tipo</th>
+                <th className="px-8 py-5 text-xs font-bold text-slate-400 uppercase tracking-widest text-center sm:text-left">Cantidad</th>
                 <th className="px-8 py-5 text-xs font-bold text-slate-400 uppercase tracking-widest text-right">Responsable</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-50">
               {currentItems.length > 0 ? (
                 currentItems.map((mov) => (
-                  <tr key={mov.id} className="hover:bg-slate-50 transition-colors">
-                    <td className="px-8 py-5">
-                      <div className="flex items-center gap-2 text-slate-500 text-xs font-medium">
-                        <Calendar className="w-4 h-4 text-slate-300" />
+                  <tr key={mov.id} className="hover:bg-slate-50 transition-colors responsive-tr">
+                    <td className="px-8 py-5 responsive-td" data-label="Fecha">
+                      <div className="flex items-center gap-2 text-slate-500 text-xs font-medium justify-end sm:justify-start">
+                        <Calendar className="w-4 h-4 text-slate-300 shrink-0" />
                         {new Date(mov.fecha).toLocaleDateString()}
                       </div>
                     </td>
-                    <td className="px-8 py-5">
-                      <div className="flex flex-col">
-                        <span className="text-sm font-bold text-slate-700 uppercase">{mov.producto_nombre}</span>
+                    <td className="px-8 py-5 responsive-td" data-label="Detalle">
+                      <div className="flex flex-col items-end sm:items-start">
+                        <span className="text-sm font-bold text-slate-700 uppercase leading-tight">{mov.producto_nombre}</span>
                         <div className="flex items-center gap-1 mt-0.5">
-                          <FileText className="w-3 h-3 text-slate-400" />
-                          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tight">
+                          <FileText className="w-3 h-3 text-slate-400 shrink-0" />
+                          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tight truncate max-w-[150px]">
                             {mov.numero_documento || mov.motivo}
                           </span>
                         </div>
                       </div>
                     </td>
-                    <td className="px-8 py-5 text-center">
-                      <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black uppercase ${
-                        mov.tipo === 'entrada' ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' : 'bg-orange-50 text-orange-600 border border-orange-100'
-                      }`}>
-                        {mov.tipo === 'entrada' ? <ArrowUp className="w-3 h-3"/> : <ArrowDown className="w-3 h-3"/>}
-                        {mov.tipo}
-                      </span>
+                    <td className="px-8 py-5 responsive-td text-center sm:text-left" data-label="Tipo">
+                      <div className="flex justify-end sm:justify-start">
+                        <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black uppercase ${mov.tipo === 'entrada' ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' : 'bg-orange-50 text-orange-600 border border-orange-100'
+                          }`}>
+                          {mov.tipo === 'entrada' ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />}
+                          {mov.tipo}
+                        </span>
+                      </div>
                     </td>
-                    <td className="px-8 py-5 text-center text-sm font-bold text-slate-700">{mov.cantidad}</td>
-                    <td className="px-8 py-5 text-right text-[11px] font-medium text-slate-400 uppercase">
-                      {mov.username || 'Admin'}
+                    <td className="px-8 py-5 responsive-td text-center sm:text-left" data-label="Cantidad">
+                      <div className="text-sm font-bold text-slate-700 text-right sm:text-left">{mov.cantidad}</div>
+                    </td>
+                    <td className="px-8 py-5 responsive-td text-right" data-label="Responsable">
+                      <span className="text-[11px] font-medium text-slate-400 uppercase">
+                        {mov.username || 'Admin'}
+                      </span>
                     </td>
                   </tr>
                 ))
@@ -222,38 +228,40 @@ function Movimientos() {
           </table>
         </div>
 
+        {/* Paginación Minimalista y Limpia */}
         {!loading && filtered.length > 0 && (
           <div className="p-6 bg-slate-50/50 border-t border-slate-100 flex flex-col sm:flex-row justify-between items-center gap-4">
+
+            {/* Contador de registros (Mantiene tu texto original) */}
             <p className="text-sm text-slate-500 font-medium">
               Mostrando <span className="text-slate-900 font-bold">{indexOfFirstItem + 1}</span> a <span className="text-slate-900 font-bold">{Math.min(indexOfLastItem, filtered.length)}</span> de {filtered.length} movimientos
             </p>
-            <div className="flex items-center gap-2">
+
+            {/* Controles de navegación compactos */}
+            <div className="flex items-center gap-3">
+              {/* Flecha Anterior */}
               <button
                 disabled={currentPage === 1}
                 onClick={() => setCurrentPage(prev => prev - 1)}
-                className="p-2 rounded-xl bg-white border border-slate-200 disabled:opacity-30 hover:bg-slate-100 transition-all shadow-sm"
+                className="p-2.5 rounded-xl bg-white border border-slate-200 disabled:opacity-30 hover:bg-slate-50 transition-all shadow-sm active:scale-90"
               >
                 <ChevronLeft className="w-5 h-5 text-slate-600" />
               </button>
-              <div className="flex gap-1">
-                {[...Array(totalPages)].map((_, i) => (
-                  <button
-                    key={i + 1}
-                    onClick={() => setCurrentPage(i + 1)}
-                    className={`w-10 h-10 rounded-xl font-bold text-sm transition-all ${
-                      currentPage === i + 1 
-                        ? 'bg-[#003366] text-white shadow-lg shadow-blue-900/20' 
-                        : 'bg-white border border-slate-200 text-slate-400 hover:border-[#003366]'
-                    }`}
-                  >
-                    {i + 1}
-                  </button>
-                ))}
+
+              {/* Cuadrito de Número Actual y Total */}
+              <div className="flex items-center gap-3 px-1">
+                <div className="w-10 h-10 rounded-xl bg-[#003366] text-white flex items-center justify-center font-bold text-sm shadow-lg shadow-blue-900/20">
+                  {currentPage}
+                </div>
+                <span className="text-slate-300 font-light text-xl">/</span>
+                <span className="text-sm font-bold text-slate-500">{totalPages}</span>
               </div>
+
+              {/* Flecha Siguiente */}
               <button
                 disabled={currentPage === totalPages}
                 onClick={() => setCurrentPage(prev => prev + 1)}
-                className="p-2 rounded-xl bg-white border border-slate-200 disabled:opacity-30 hover:bg-slate-100 transition-all shadow-sm"
+                className="p-2.5 rounded-xl bg-white border border-slate-200 disabled:opacity-30 hover:bg-slate-50 transition-all shadow-sm active:scale-90"
               >
                 <ChevronRight className="w-5 h-5 text-slate-600" />
               </button>
@@ -261,21 +269,21 @@ function Movimientos() {
           </div>
         )}
       </div>
-
+      {/* Modal - Ajustado para ser más scrollable en móvil */}
       {showModal && (
-        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center z-[120] p-4">
-          <div className="bg-white rounded-[2.5rem] p-6 md:p-10 w-full max-w-2xl shadow-2xl animate-in zoom-in duration-200 max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center z-[120] p-2 sm:p-4">
+          <div className="bg-white rounded-[2rem] sm:rounded-[2.5rem] p-6 md:p-10 w-full max-w-2xl shadow-2xl animate-in zoom-in duration-200 max-h-[95vh] overflow-y-auto overflow-x-hidden custom-scrollbar">
             <div className="flex justify-between items-center mb-6">
-              <h2 className="text-2xl font-black text-slate-900">Nuevo Registro</h2>
+              <h2 className="text-2xl font-black text-slate-900 uppercase tracking-tight">Nuevo Registro</h2>
               <button onClick={closeModal} className="p-2 bg-slate-50 rounded-full text-slate-400 hover:text-red-500 transition-colors">
-                <X className="w-6 h-6"/>
+                <X className="w-6 h-6" />
               </button>
             </div>
-            
-            <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+            <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
               <div className="md:col-span-2 space-y-1.5 relative">
                 <label className="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1">Producto *</label>
-                <div 
+                <div
                   onClick={() => setIsSelectOpen(!isSelectOpen)}
                   className="w-full px-4 py-3 rounded-xl border border-slate-200 flex justify-between items-center cursor-pointer bg-slate-50 hover:border-[#003366]/30 transition-all"
                 >
@@ -288,25 +296,25 @@ function Movimientos() {
                 {isSelectOpen && (
                   <div className="absolute w-full mt-2 bg-white border border-slate-100 shadow-2xl rounded-2xl z-[130] overflow-hidden animate-in fade-in slide-in-from-top-2">
                     <div className="p-3 border-b border-slate-50 bg-slate-50/50">
-                      <input 
+                      <input
                         autoFocus
-                        type="text" 
+                        type="text"
                         placeholder="Filtrar por nombre..."
-                        className="w-full px-4 py-2 bg-white border border-slate-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-[#003366]/10"
+                        className="w-full px-4 py-2 bg-white border border-slate-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-[#003366]/10 font-medium"
                         value={searchProduct}
                         onChange={(e) => setSearchProduct(e.target.value)}
                       />
                     </div>
-                    <div className="max-h-48 overflow-y-auto">
+                    <div className="max-h-48 overflow-y-auto custom-scrollbar">
                       {filteredProducts.map(prod => (
-                        <div 
+                        <div
                           key={prod.id}
                           onClick={() => {
-                            setFormData({...formData, producto_id: prod.id});
+                            setFormData({ ...formData, producto_id: prod.id });
                             setIsSelectOpen(false);
                             setSearchProduct('');
                           }}
-                          className="px-4 py-3 hover:bg-[#003366] hover:text-white cursor-pointer group transition-colors"
+                          className="px-4 py-3 hover:bg-[#003366] hover:text-white cursor-pointer group transition-colors border-b border-slate-50 last:border-0"
                         >
                           <p className="font-bold text-sm">{prod.nombre}</p>
                           <p className="text-[10px] uppercase opacity-70">Stock actual: {prod.stock_actual}</p>
@@ -319,7 +327,7 @@ function Movimientos() {
 
               <div className="space-y-1.5">
                 <label className="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1">Tipo</label>
-                <select value={formData.tipo} onChange={(e) => setFormData({...formData, tipo: e.target.value})} className="w-full px-4 py-3 rounded-xl border border-slate-200 font-bold bg-white outline-none focus:ring-4 focus:ring-[#003366]/5 text-sm">
+                <select value={formData.tipo} onChange={(e) => setFormData({ ...formData, tipo: e.target.value })} className="w-full px-4 py-3 rounded-xl border border-slate-200 font-bold bg-white outline-none focus:ring-4 focus:ring-[#003366]/5 text-sm appearance-none">
                   <option value="entrada">🟢 ENTRADA</option>
                   <option value="salida">🔴 SALIDA</option>
                 </select>
@@ -327,17 +335,17 @@ function Movimientos() {
 
               <div className="space-y-1.5">
                 <label className="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1">Cantidad *</label>
-                <input type="number" required min="1" value={formData.cantidad} onChange={(e) => setFormData({...formData, cantidad: e.target.value})} className="w-full px-4 py-3 rounded-xl border border-slate-200 font-bold outline-none focus:ring-4 focus:ring-[#003366]/5 text-sm" />
+                <input type="number" required min="1" value={formData.cantidad} onChange={(e) => setFormData({ ...formData, cantidad: e.target.value })} className="w-full px-4 py-3 rounded-xl border border-slate-200 font-bold outline-none focus:ring-4 focus:ring-[#003366]/5 text-sm" />
               </div>
 
               <div className="space-y-1.5">
                 <label className="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1">N° Documento</label>
-                <input type="text" value={formData.numero_documento} onChange={(e) => setFormData({...formData, numero_documento: e.target.value})} placeholder="Ej: FAC-101" className="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none focus:ring-4 focus:ring-[#003366]/5 text-sm font-medium" />
+                <input type="text" value={formData.numero_documento} onChange={(e) => setFormData({ ...formData, numero_documento: e.target.value })} placeholder="Ej: FAC-101" className="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none focus:ring-4 focus:ring-[#003366]/5 text-sm font-medium" />
               </div>
 
               <div className="space-y-1.5">
                 <label className="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1">Proveedor</label>
-                <select value={formData.proveedor_id} onChange={(e) => setFormData({...formData, proveedor_id: e.target.value})} className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-white outline-none focus:ring-4 focus:ring-[#003366]/5 text-sm font-medium">
+                <select value={formData.proveedor_id} onChange={(e) => setFormData({ ...formData, proveedor_id: e.target.value })} className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-white outline-none focus:ring-4 focus:ring-[#003366]/5 text-sm font-medium">
                   <option value="">No aplica</option>
                   {proveedores.map(p => <option key={p.id} value={p.id}>{p.nombre}</option>)}
                 </select>
@@ -345,12 +353,12 @@ function Movimientos() {
 
               <div className="md:col-span-2 space-y-1.5">
                 <label className="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1">Motivo *</label>
-                <input type="text" required value={formData.motivo} onChange={(e) => setFormData({...formData, motivo: e.target.value})} placeholder="Ej: Reposición de stock" className="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none focus:ring-4 focus:ring-[#003366]/5 text-sm font-medium" />
+                <input type="text" required value={formData.motivo} onChange={(e) => setFormData({ ...formData, motivo: e.target.value })} placeholder="Ej: Reposición de stock" className="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none focus:ring-4 focus:ring-[#003366]/5 text-sm font-medium" />
               </div>
 
               <div className="md:col-span-2 space-y-1.5">
                 <label className="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1">Observaciones</label>
-                <textarea rows="2" value={formData.observaciones} onChange={(e) => setFormData({...formData, observaciones: e.target.value})} className="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none resize-none focus:ring-4 focus:ring-[#003366]/5 text-sm font-medium"></textarea>
+                <textarea rows="2" value={formData.observaciones} onChange={(e) => setFormData({ ...formData, observaciones: e.target.value })} className="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none resize-none focus:ring-4 focus:ring-[#003366]/5 text-sm font-medium" placeholder="Notas adicionales..."></textarea>
               </div>
 
               <button type="submit" className="md:col-span-2 py-4 bg-[#003366] text-white font-black rounded-xl hover:bg-[#001a33] shadow-lg shadow-blue-900/10 transition-all active:scale-[0.98] mt-2 uppercase tracking-widest text-sm">

@@ -1,9 +1,9 @@
 import { useState, useEffect, useCallback } from 'react';
 import { proveedoresAPI } from '../services/api';
-import { 
-  Plus, Edit, Trash2, Search, Truck, Phone, 
-  User, X, CheckCircle2, AlertCircle, Loader2, 
-  ChevronLeft, ChevronRight, Mail, MapPin, AlertTriangle 
+import {
+  Plus, Edit, Trash2, Search, Truck, Phone,
+  User, X, CheckCircle2, AlertCircle, Loader2,
+  ChevronLeft, ChevronRight, Mail, MapPin, AlertTriangle
 } from 'lucide-react';
 
 // --- COMPONENTE CONFIRM DIALOG COMPACTO ---
@@ -39,8 +39,8 @@ const Notification = ({ message, type, onClose }) => {
     return () => clearTimeout(timer);
   }, [onClose]);
 
-  const styles = type === 'success' 
-    ? "bg-emerald-50 border-emerald-100 text-emerald-600" 
+  const styles = type === 'success'
+    ? "bg-emerald-50 border-emerald-100 text-emerald-600"
     : "bg-red-50 border-red-100 text-red-600";
 
   return (
@@ -59,16 +59,13 @@ function Proveedores() {
   const [showModal, setShowModal] = useState(false);
   const [editingProvider, setEditingProvider] = useState(null);
   const [notification, setNotification] = useState(null);
-  
-  // Estado para el ConfirmDialog
   const [confirmData, setConfirmData] = useState({ isOpen: false, id: null });
-
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(5);
 
   const [formData, setFormData] = useState({
     nombre: '',
-    contacto: '', 
+    contacto: '',
     telefono: '',
     email: '',
     direccion: ''
@@ -121,7 +118,7 @@ function Proveedores() {
     setEditingProvider(prov);
     setFormData({
       nombre: prov.nombre,
-      contacto: prov.contacto || '', 
+      contacto: prov.contacto || '',
       telefono: prov.telefono || '',
       email: prov.email || '',
       direccion: prov.direccion || ''
@@ -185,9 +182,9 @@ function Proveedores() {
           </div>
         )}
 
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[800px] border-collapse text-left">
-            <thead>
+        <div className="overflow-x-auto w-full">
+          <table className="w-full border-collapse text-left">
+            <thead className="hidden md:table-header-group">
               <tr className="bg-slate-50/50 border-b border-slate-100">
                 <th className="px-8 py-5 text-xs font-bold text-slate-400 uppercase tracking-widest">Empresa</th>
                 <th className="px-8 py-5 text-xs font-bold text-slate-400 uppercase tracking-widest">Contacto</th>
@@ -195,42 +192,62 @@ function Proveedores() {
                 <th className="px-8 py-5 text-xs font-bold text-slate-400 uppercase tracking-widest text-right">Acciones</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-50">
+            <tbody className="divide-y divide-slate-100 block md:table-row-group">
               {currentItems.length > 0 ? (
                 currentItems.map((prov) => (
-                  <tr key={prov.id} className="hover:bg-slate-50 transition-colors">
-                    <td className="px-8 py-5">
-                      <div className="flex items-center gap-3">
-                        <div className="p-2 bg-blue-50 rounded-xl text-[#003366]">
-                          <Truck className="w-5 h-5" />
-                        </div>
-                        <div className="font-bold text-slate-800 uppercase text-sm tracking-tight">{prov.nombre}</div>
-                      </div>
-                    </td>
-                    <td className="px-8 py-5">
-                      <div className="flex items-center gap-2 text-slate-600 font-medium">
-                        <User className="w-4 h-4 text-slate-300" />
-                        {prov.contacto || '---'}
-                      </div>
-                    </td>
-                    <td className="px-8 py-5">
-                      <div className="space-y-1">
-                        <div className="flex items-center gap-2 text-sm text-slate-600 font-bold">
-                          <Phone className="w-3.5 h-3.5 text-[#00529b]" /> {prov.telefono || '---'}
-                        </div>
-                        <div className="flex items-center gap-2 text-xs text-slate-400">
-                          <Mail className="w-3.5 h-3.5" /> {prov.email || 'No registrado'}
+                  <tr key={prov.id} className="hover:bg-slate-50/50 transition-colors flex flex-col md:table-row p-6 md:p-0">
+
+                    {/* Empresa */}
+                    <td className="px-0 md:px-8 py-2 md:py-5 block md:table-cell">
+                      <div className="flex items-center justify-between md:justify-start gap-4">
+                        <span className="text-[10px] font-black text-slate-300 uppercase tracking-widest md:hidden">Empresa</span>
+                        <div className="flex items-center gap-3">
+                          <div className="p-2 bg-blue-50 rounded-xl text-[#003366] shrink-0">
+                            <Truck className="w-5 h-5" />
+                          </div>
+                          <div className="font-bold text-slate-800 uppercase text-sm tracking-tight">{prov.nombre}</div>
                         </div>
                       </div>
                     </td>
-                    <td className="px-8 py-5">
-                      <div className="flex justify-end gap-2">
-                        <button onClick={() => handleEdit(prov)} className="p-2 text-[#003366] hover:bg-blue-50 rounded-xl transition-all">
-                          <Edit className="w-5 h-5" />
-                        </button>
-                        <button onClick={() => handleDeleteClick(prov.id)} className="p-2 text-red-500 hover:bg-red-50 rounded-xl transition-all">
-                          <Trash2 className="w-5 h-5" />
-                        </button>
+
+                    {/* Contacto */}
+                    <td className="px-0 md:px-8 py-2 md:py-5 block md:table-cell border-t border-slate-50 md:border-none mt-1 md:mt-0 pt-3 md:pt-5">
+                      <div className="flex justify-between md:block">
+                        <span className="text-[10px] font-black text-slate-300 uppercase tracking-widest md:hidden">Contacto</span>
+                        <div className="flex items-center gap-2 md:justify-start justify-end text-slate-600 font-medium text-sm">
+                          <User className="w-4 h-4 text-slate-300 hidden md:block" />
+                          {prov.contacto || '---'}
+                        </div>
+                      </div>
+                    </td>
+
+                    {/* Teléfono / Email */}
+                    <td className="px-0 md:px-8 py-2 md:py-5 block md:table-cell border-t border-slate-50 md:border-none mt-1 md:mt-0 pt-3 md:pt-5">
+                      <div className="flex justify-between md:block">
+                        <span className="text-[10px] font-black text-slate-300 uppercase tracking-widest md:hidden">Teléfono / Email</span>
+                        <div className="space-y-1 text-right md:text-left">
+                          <div className="flex items-center gap-2 md:justify-start justify-end text-sm text-slate-600 font-bold">
+                            <Phone className="w-3.5 h-3.5 text-[#00529b] hidden md:block" /> {prov.telefono || '---'}
+                          </div>
+                          <div className="flex items-center gap-2 md:justify-start justify-end text-xs text-slate-400">
+                            <Mail className="w-3.5 h-3.5 hidden md:block" /> {prov.email || 'No registrado'}
+                          </div>
+                        </div>
+                      </div>
+                    </td>
+
+                    {/* Acciones */}
+                    <td className="px-0 md:px-8 py-2 md:py-5 block md:table-cell border-t border-slate-50 md:border-none mt-1 md:mt-0 pt-3 md:pt-5">
+                      <div className="flex items-center justify-between md:justify-end gap-2">
+                        <span className="text-[10px] font-black text-slate-300 uppercase tracking-widest md:hidden">Acciones</span>
+                        <div className="flex gap-1">
+                          <button onClick={() => handleEdit(prov)} className="p-2 text-[#003366] hover:bg-blue-50 rounded-xl transition-all">
+                            <Edit className="w-5 h-5" />
+                          </button>
+                          <button onClick={() => handleDeleteClick(prov.id)} className="p-2 text-red-500 hover:bg-red-50 rounded-xl transition-all">
+                            <Trash2 className="w-5 h-5" />
+                          </button>
+                        </div>
                       </div>
                     </td>
                   </tr>
@@ -241,20 +258,43 @@ function Proveedores() {
             </tbody>
           </table>
         </div>
-
+        {/* Paginación Minimalista y Limpia */}
         {!loading && filtered.length > 0 && (
           <div className="p-6 bg-slate-50/50 border-t border-slate-100 flex flex-col sm:flex-row justify-between items-center gap-4">
+
+            {/* Contador de registros (Mantiene tu texto original) */}
             <p className="text-sm text-slate-500 font-medium">
-              Mostrando <span className="text-slate-900 font-bold">{indexOfFirstItem + 1}</span> a <span className="text-slate-900 font-bold">{Math.min(indexOfLastItem, filtered.length)}</span> de {filtered.length} proveedores
+              Mostrando <span className="text-slate-900 font-bold">{indexOfFirstItem + 1}</span> a <span className="text-slate-900 font-bold">{Math.min(indexOfLastItem, filtered.length)}</span> de {filtered.length} movimientos
             </p>
-            <div className="flex items-center gap-2">
-              <button disabled={currentPage === 1} onClick={() => setCurrentPage(prev => prev - 1)} className="p-2 rounded-xl bg-white border border-slate-200 disabled:opacity-30 hover:bg-slate-100 shadow-sm"><ChevronLeft className="w-5 h-5" /></button>
-              <div className="flex gap-1">
-                {[...Array(totalPages)].map((_, i) => (
-                  <button key={i + 1} onClick={() => setCurrentPage(i + 1)} className={`w-10 h-10 rounded-xl font-bold text-sm ${currentPage === i + 1 ? 'bg-[#003366] text-white shadow-lg' : 'bg-white border text-slate-400'}`}>{i + 1}</button>
-                ))}
+
+            {/* Controles de navegación compactos */}
+            <div className="flex items-center gap-3">
+              {/* Flecha Anterior */}
+              <button
+                disabled={currentPage === 1}
+                onClick={() => setCurrentPage(prev => prev - 1)}
+                className="p-2.5 rounded-xl bg-white border border-slate-200 disabled:opacity-30 hover:bg-slate-50 transition-all shadow-sm active:scale-90"
+              >
+                <ChevronLeft className="w-5 h-5 text-slate-600" />
+              </button>
+
+              {/* Cuadrito de Número Actual y Total */}
+              <div className="flex items-center gap-3 px-1">
+                <div className="w-10 h-10 rounded-xl bg-[#003366] text-white flex items-center justify-center font-bold text-sm shadow-lg shadow-blue-900/20">
+                  {currentPage}
+                </div>
+                <span className="text-slate-300 font-light text-xl">/</span>
+                <span className="text-sm font-bold text-slate-500">{totalPages}</span>
               </div>
-              <button disabled={currentPage === totalPages} onClick={() => setCurrentPage(prev => prev + 1)} className="p-2 rounded-xl bg-white border border-slate-200 disabled:opacity-30 hover:bg-slate-100 shadow-sm"><ChevronRight className="w-5 h-5" /></button>
+
+              {/* Flecha Siguiente */}
+              <button
+                disabled={currentPage === totalPages}
+                onClick={() => setCurrentPage(prev => prev + 1)}
+                className="p-2.5 rounded-xl bg-white border border-slate-200 disabled:opacity-30 hover:bg-slate-50 transition-all shadow-sm active:scale-90"
+              >
+                <ChevronRight className="w-5 h-5 text-slate-600" />
+              </button>
             </div>
           </div>
         )}
@@ -265,32 +305,32 @@ function Proveedores() {
           <div className="bg-white rounded-[2.5rem] p-6 md:p-10 w-full max-w-md shadow-2xl animate-in zoom-in duration-200 max-h-[95vh] overflow-y-auto">
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-2xl font-black text-slate-900">{editingProvider ? 'Editar Proveedor' : 'Nuevo Registro'}</h2>
-              <button onClick={closeModal} className="p-2 bg-slate-50 rounded-full text-slate-400 hover:text-red-500 transition-colors"><X className="w-6 h-6"/></button>
+              <button onClick={closeModal} className="p-2 bg-slate-50 rounded-full text-slate-400 hover:text-red-500 transition-colors"><X className="w-6 h-6" /></button>
             </div>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-1.5">
                 <label className="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1">Nombre de la Empresa *</label>
-                <input required type="text" value={formData.nombre} onChange={(e) => setFormData({...formData, nombre: e.target.value})} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 outline-none focus:ring-4 focus:ring-[#003366]/5 transition-all text-sm" />
+                <input required type="text" value={formData.nombre} onChange={(e) => setFormData({ ...formData, nombre: e.target.value })} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 outline-none focus:ring-4 focus:ring-[#003366]/5 transition-all text-sm font-medium" />
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-1.5">
                   <label className="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1">Contacto</label>
-                  <input type="text" value={formData.contacto} onChange={(e) => setFormData({...formData, contacto: e.target.value})} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 outline-none focus:ring-4 focus:ring-[#003366]/5 transition-all text-sm" />
+                  <input type="text" value={formData.contacto} onChange={(e) => setFormData({ ...formData, contacto: e.target.value })} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 outline-none focus:ring-4 focus:ring-[#003366]/5 transition-all text-sm font-medium" />
                 </div>
                 <div className="space-y-1.5">
                   <label className="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1">Teléfono</label>
-                  <input type="text" value={formData.telefono} onChange={(e) => setFormData({...formData, telefono: e.target.value})} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 outline-none focus:ring-4 focus:ring-[#003366]/5 transition-all text-sm" />
+                  <input type="text" value={formData.telefono} onChange={(e) => setFormData({ ...formData, telefono: e.target.value })} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 outline-none focus:ring-4 focus:ring-[#003366]/5 transition-all text-sm font-medium" />
                 </div>
               </div>
               <div className="space-y-1.5">
                 <label className="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1">Correo Electrónico</label>
-                <input type="email" value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 outline-none focus:ring-4 focus:ring-[#003366]/5 transition-all text-sm" />
+                <input type="email" value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 outline-none focus:ring-4 focus:ring-[#003366]/5 transition-all text-sm font-medium" />
               </div>
               <div className="space-y-1.5">
                 <label className="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1">Dirección Física</label>
                 <div className="relative">
                   <MapPin className="absolute left-3.5 top-2.5 w-4 h-4 text-slate-400" />
-                  <input type="text" value={formData.direccion} onChange={(e) => setFormData({...formData, direccion: e.target.value})} className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 outline-none focus:ring-4 focus:ring-[#003366]/5 transition-all text-sm" />
+                  <input type="text" value={formData.direccion} onChange={(e) => setFormData({ ...formData, direccion: e.target.value })} className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 outline-none focus:ring-4 focus:ring-[#003366]/5 transition-all text-sm font-medium" />
                 </div>
               </div>
               <button type="submit" className="w-full py-3.5 bg-[#003366] text-white font-bold rounded-xl hover:bg-[#001a33] shadow-lg shadow-blue-900/10 transition-all mt-2 active:scale-[0.98]">
@@ -301,8 +341,7 @@ function Proveedores() {
         </div>
       )}
 
-      {/* DIÁLOGO DE CONFIRMACIÓN */}
-      <ConfirmDialog 
+      <ConfirmDialog
         isOpen={confirmData.isOpen}
         title="¿Desactivar proveedor?"
         message="El proveedor no aparecerá en nuevos registros pero se mantendrá en el historial."

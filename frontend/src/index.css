@@ -8,3 +8,45 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
+@media (max-width: 768px) {
+  /* Ocultar encabezado real */
+  .table-responsive thead {
+    display: none;
+  }
+
+  /* Fila convertida en tarjeta */
+  .responsive-tr {
+    display: block !important;
+    margin: 1rem;
+    border: 1px solid #f1f5f9 !important;
+    border-radius: 1.5rem !important;
+    background: white;
+    box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.05);
+  }
+
+  /* Celda como fila de datos con etiqueta */
+  .responsive-td {
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    padding: 1rem 1.25rem !important;
+    border-bottom: 1px solid #f8fafc !important;
+    text-align: right !important;
+  }
+
+  .responsive-td:last-child {
+    border-bottom: none !important;
+  }
+
+  /* Generar etiqueta desde el atributo data-label */
+  .responsive-td::before {
+    content: attr(data-label);
+    font-weight: 800;
+    text-transform: uppercase;
+    font-size: 0.65rem;
+    color: #94a3b8;
+    letter-spacing: 0.05em;
+    text-align: left;
+    margin-right: 1rem;
+  }
+}
