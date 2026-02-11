@@ -47,7 +47,7 @@ export const exportToPDF = (tipoReporte, datos, totalFormateado, logoAsset) => {
   // Información de emisión
   doc.setFontSize(9);
   doc.text(`EMISIÓN: ${new Date().toLocaleDateString()} ${new Date().toLocaleTimeString()}`, 220, 15);
-  doc.text("CENTRO DE SERVICIO ESPECIALIZADO LG", 220, 22);
+  doc.text("CENTRO DE SERVICIO ESPECIALIZADO ", 220, 22);
 
   // --- 4. TABLA DE DATOS ---
   const headers = Object.keys(datos[0]);

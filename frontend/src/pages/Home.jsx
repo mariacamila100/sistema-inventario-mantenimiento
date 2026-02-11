@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom'; // 1. Importamos el hook de navegación
 import { productosAPI } from '../services/api';
 import { Package, AlertTriangle, TrendingUp, Boxes, ArrowRight, Settings } from 'lucide-react';
 
 function Home() {
+  const navigate = useNavigate(); // 2. Inicializamos el hook
   const [stats, setStats] = useState({
     totalProductos: 0,
     bajosStock: 0,
@@ -45,7 +47,7 @@ function Home() {
       
       {/* Tarjetas - Responsive Grid */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 lg:gap-8">
-        {/* Tarjeta Total - AHORA EN AZUL PIZARRA SUTIL */}
+        {/* Tarjeta Total */}
         <div className="relative group overflow-hidden bg-[#1e293b] rounded-2xl lg:rounded-3xl p-6 lg:p-8 text-white shadow-xl shadow-slate-200 transition-transform hover:-translate-y-1">
           <div className="relative z-10 flex items-start justify-between">
             <div>
@@ -62,10 +64,13 @@ function Home() {
           <div className="absolute -right-10 -bottom-10 w-40 h-40 bg-blue-500/5 rounded-full blur-3xl"></div>
         </div>
         
-        {/* Tarjeta Alertas */}
-        <div className="bg-white rounded-2xl lg:rounded-3xl p-6 lg:p-8 border border-slate-100 shadow-sm flex flex-col justify-between transition-transform hover:-translate-y-1">
+        {/* Tarjeta Alertas - AHORA CLICABLE */}
+        <div 
+          onClick={() => navigate('/informes', { state: { tipo: 'critico' } })} // Enviamos el estado
+          className="bg-white rounded-2xl lg:rounded-3xl p-6 lg:p-8 border border-slate-100 shadow-sm flex flex-col justify-between transition-all hover:-translate-y-1 hover:shadow-md hover:border-red-100 cursor-pointer group"
+        >
           <div className="flex items-center justify-between">
-            <div className="bg-red-50 p-3 lg:p-4 rounded-xl lg:rounded-2xl text-red-500">
+            <div className="bg-red-50 p-3 lg:p-4 rounded-xl lg:rounded-2xl text-red-500 group-hover:scale-110 transition-transform">
               <AlertTriangle className="w-8 lg:w-10 h-8 lg:h-10" />
             </div>
             {stats.bajosStock > 0 && (
@@ -76,7 +81,9 @@ function Home() {
           </div>
           <div className="mt-4 lg:mt-6">
             <h3 className="text-3xl lg:text-4xl font-bold text-slate-800">{stats.bajosStock}</h3>
-            <p className="text-slate-500 font-bold text-xs lg:text-sm uppercase tracking-widest">Stock Crítico</p>
+            <p className="text-slate-500 font-bold text-xs lg:text-sm uppercase tracking-widest flex items-center gap-2">
+              Stock Crítico <ArrowRight className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" />
+            </p>
           </div>
         </div>
         

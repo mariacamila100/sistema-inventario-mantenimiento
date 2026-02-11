@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom'; // IMPORTANTE: Para recibir el estado
 import api from '../services/api';
 import { FileSpreadsheet, Package, AlertCircle, Users, FileText, Wind, TrendingUp } from 'lucide-react';
 import * as XLSX from 'xlsx';
@@ -6,6 +7,7 @@ import { exportToPDF } from '../services/reportGenerator';
 import logoEmpresa from '../assets/logoAsset.png';
 
 function Informes() {
+  const location = useLocation(); // Inicializamos para leer si venimos del Home
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [reporteActual, setReporteActual] = useState([]);
@@ -14,6 +16,7 @@ function Informes() {
 
   useEffect(() => {
     fetchInitialData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const fetchInitialData = async () => {
@@ -21,20 +24,31 @@ function Informes() {
     try {
       const res = await api.get('/informes/resumen');
       setData(res.data);
-      generarReporte('inventario');
-    } catch (error) { console.error("Error:", error); }
-    finally { setLoading(false); }
+      
+      // LÓGICA DE REDIRECCIÓN: 
+      // Si recibimos 'tipo' desde el estado de navegación (Home), usamos ese,
+      // de lo contrario, por defecto es 'inventario'.
+      const reportePrioritario = location.state?.tipo || 'inventario';
+      generarReporte(reportePrioritario);
+      
+    } catch (error) { 
+      console.error("Error al cargar datos iniciales:", error); 
+    } finally { 
+      setLoading(false); 
+    }
   };
 
   const generarReporte = async (tipo) => {
-    setTipoReporte(tipo);
+    setTipoReporte(tipo); // Esto ilumina el botón correspondiente (Azul, Rojo o Verde)
     try {
       const endpoints = {
         inventario: '/informes/inventario-completo',
         critico: '/informes/stock-critico',
         proveedores: '/informes/proveedores'
       };
+      
       const res = await api.get(endpoints[tipo]);
+      
       if (tipo === 'inventario') {
         setReporteActual(res.data.detalles || []);
         setTotalInforme(res.data.sumatoriaTotal || 0);
@@ -42,7 +56,10 @@ function Informes() {
         setReporteActual(res.data || []);
         setTotalInforme(0);
       }
-    } catch (error) { setReporteActual([]); }
+    } catch (error) { 
+      console.error("Error al generar reporte:", error);
+      setReporteActual([]); 
+    }
   };
 
   const formatMoney = (value) => {
@@ -96,19 +113,24 @@ function Informes() {
         </div>
       </div>
 
+      {/* Selectores de Reporte */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 shrink-0">
         {[
           { id: 'inventario', label: 'Inventario General', icon: Package, activeClass: 'border-[#00529b] bg-blue-50/50 text-[#00529b]', iconClass: 'bg-[#00529b]' },
           { id: 'critico', label: 'Stock Crítico', icon: AlertCircle, activeClass: 'border-red-500 bg-red-50/50 text-red-700', iconClass: 'bg-red-500' },
           { id: 'proveedores', label: 'Directorio Proveedores', icon: Users, activeClass: 'border-emerald-500 bg-emerald-50/50 text-emerald-700', iconClass: 'bg-emerald-500' }
         ].map((btn) => (
-          <button key={btn.id} onClick={() => generarReporte(btn.id)}
-            className={`p-4 md:p-6 rounded-3xl border-2 transition-all flex items-center justify-between group shadow-sm ${tipoReporte === btn.id ? btn.activeClass : 'bg-white border-slate-100 hover:border-slate-300 text-slate-600'
-              }`}
+          <button 
+            key={btn.id} 
+            onClick={() => generarReporte(btn.id)}
+            className={`p-4 md:p-6 rounded-3xl border-2 transition-all flex items-center justify-between group shadow-sm ${
+              tipoReporte === btn.id ? btn.activeClass : 'bg-white border-slate-100 hover:border-slate-300 text-slate-600'
+            }`}
           >
             <div className="flex items-center gap-4">
-              <div className={`p-3 rounded-xl transition-colors ${tipoReporte === btn.id ? 'text-white ' + btn.iconClass : 'bg-slate-50 text-slate-400 group-hover:bg-slate-100'
-                }`}>
+              <div className={`p-3 rounded-xl transition-colors ${
+                tipoReporte === btn.id ? 'text-white ' + btn.iconClass : 'bg-slate-50 text-slate-400 group-hover:bg-slate-100'
+              }`}>
                 <btn.icon className="w-5 h-5" />
               </div>
               <span className="font-bold text-xs md:text-sm uppercase tracking-tight">{btn.label}</span>
@@ -117,6 +139,7 @@ function Informes() {
         ))}
       </div>
 
+      {/* Contenedor de Tabla */}
       <div className="bg-white rounded-[2.5rem] border-2 border-slate-50 shadow-2xl shadow-slate-200/50 flex flex-col flex-1 overflow-hidden mb-4">
         <div className="px-8 py-5 border-b border-slate-50 flex flex-col md:flex-row justify-between items-center gap-4 shrink-0 bg-white">
           <div className="flex items-center gap-4">
@@ -162,8 +185,9 @@ function Informes() {
                       <td
                         key={j}
                         data-label={key.replace('_', ' ')}
-                        className={`px-8 py-4 text-xs transition-colors responsive-td ${isMainColumn ? 'font-medium text-slate-900' : 'font-normal text-slate-500'
-                          }`}
+                        className={`px-8 py-4 text-xs transition-colors responsive-td ${
+                          isMainColumn ? 'font-medium text-slate-900' : 'font-normal text-slate-500'
+                        }`}
                       >
                         <span className={`${isNumeric ? 'font-mono text-slate-600' : ''}`}>
                           {key.includes('PRECIO') || key.includes('VALOR') ? formatMoney(val) : val}
@@ -175,6 +199,12 @@ function Informes() {
               ))}
             </tbody>
           </table>
+          {reporteActual.length === 0 && (
+              <div className="p-20 text-center text-slate-400">
+                  <Package className="w-12 h-12 mx-auto mb-4 opacity-20" />
+                  <p className="text-sm font-medium">No hay datos disponibles para este reporte.</p>
+              </div>
+          )}
         </div>
       </div>
 
