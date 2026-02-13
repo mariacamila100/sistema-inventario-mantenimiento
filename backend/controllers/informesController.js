@@ -57,7 +57,46 @@ const informesController = {
             res.status(500).json({ error: 'Error al obtener proveedores' });
         }
     },
+// ... (dentro del objeto informesController)
 
+getKardex: async (req, res) => {
+        try {
+            const { producto, tipo } = req.query; // Capturamos filtros
+            let valores = [];
+            
+            let query = `
+                SELECT 
+                    DATE_FORMAT(m.fecha, '%d/%m/%Y %H:%i') AS 'FECHA',
+                    p.nombre AS 'PRODUCTO',
+                    UPPER(m.tipo) AS 'OPERACIÓN',
+                    m.cantidad AS 'CANT.',
+                    IFNULL(m.numero_documento, '—') AS 'DOCUMENTO',
+                    IFNULL(u.nombre_completo, 'Sistema') AS 'RESPONSABLE',
+                    IFNULL(m.motivo, 'Sin detalle') AS 'DETALLE'
+                FROM movimientos m
+                INNER JOIN productos p ON m.producto_id = p.id
+                LEFT JOIN usuarios u ON m.usuario_id = u.id
+                WHERE 1=1`; // Truco para concatenar filtros fácilmente
+
+            if (producto) {
+                query += ` AND p.nombre LIKE ?`;
+                valores.push(`%${producto}%`);
+            }
+
+            if (tipo && tipo !== 'todos') {
+                query += ` AND m.tipo = ?`;
+                valores.push(tipo);
+            }
+
+            query += ` ORDER BY m.fecha DESC LIMIT 100`;
+
+            const [rows] = await db.query(query, valores);
+            res.json(rows);
+        } catch (error) {
+            console.error("Error en Kardex:", error);
+            res.status(500).json({ error: 'Error al filtrar el historial' });
+        }
+    },
     getResumenInventario: async (req, res) => {
         try {
             const [resumen] = await db.query('SELECT SUM(stock_actual * precio_unitario) as valor_inventario FROM productos WHERE estado = "Activo"');

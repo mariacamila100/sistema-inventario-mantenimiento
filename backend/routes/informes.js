@@ -7,5 +7,6 @@ router.get('/resumen', informesController.getResumenInventario);
 router.get('/inventario-completo', informesController.getInventarioCompleto);
 router.get('/stock-critico', informesController.getStockMinimo);
 router.get('/proveedores', informesController.getProveedoresResumen);
+router.get('/kardex', informesController.getKardex);
 
 module.exports = router;

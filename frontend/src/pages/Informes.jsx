@@ -1,22 +1,25 @@
 import { useState, useEffect } from 'react';
-import { useLocation } from 'react-router-dom'; // IMPORTANTE: Para recibir el estado
+import { useLocation } from 'react-router-dom';
 import api from '../services/api';
-import { FileSpreadsheet, Package, AlertCircle, Users, FileText, Wind, TrendingUp } from 'lucide-react';
+import { FileSpreadsheet, Package, AlertCircle, Users, FileText, Wind, TrendingUp, History, Search, Filter } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { exportToPDF } from '../services/reportGenerator';
 import logoEmpresa from '../assets/logoAsset.png';
 
 function Informes() {
-  const location = useLocation(); // Inicializamos para leer si venimos del Home
+  const location = useLocation();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [reporteActual, setReporteActual] = useState([]);
   const [tipoReporte, setTipoReporte] = useState('inventario');
   const [totalInforme, setTotalInforme] = useState(0);
 
+  // Estados para filtros del Kárdex
+  const [filtroProducto, setFiltroProducto] = useState('');
+  const [filtroTipo, setFiltroTipo] = useState('todos');
+
   useEffect(() => {
     fetchInitialData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const fetchInitialData = async () => {
@@ -24,27 +27,23 @@ function Informes() {
     try {
       const res = await api.get('/informes/resumen');
       setData(res.data);
-      
-      // LÓGICA DE REDIRECCIÓN: 
-      // Si recibimos 'tipo' desde el estado de navegación (Home), usamos ese,
-      // de lo contrario, por defecto es 'inventario'.
       const reportePrioritario = location.state?.tipo || 'inventario';
       generarReporte(reportePrioritario);
-      
     } catch (error) { 
-      console.error("Error al cargar datos iniciales:", error); 
+      console.error("Error al cargar datos:", error); 
     } finally { 
       setLoading(false); 
     }
   };
 
-  const generarReporte = async (tipo) => {
-    setTipoReporte(tipo); // Esto ilumina el botón correspondiente (Azul, Rojo o Verde)
+  const generarReporte = async (tipo, pNombre = filtroProducto, pTipo = filtroTipo) => {
+    setTipoReporte(tipo);
     try {
       const endpoints = {
         inventario: '/informes/inventario-completo',
         critico: '/informes/stock-critico',
-        proveedores: '/informes/proveedores'
+        proveedores: '/informes/proveedores',
+        kardex: `/informes/kardex?producto=${pNombre}&tipo=${pTipo}`
       };
       
       const res = await api.get(endpoints[tipo]);
@@ -73,7 +72,7 @@ function Informes() {
     const ws = XLSX.utils.json_to_sheet(reporteActual);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Informe Aconfrios");
-    XLSX.writeFile(wb, `Aconfrios_Reporte_${tipoReporte}.xlsx`);
+    XLSX.writeFile(wb, `Aconfrios_${tipoReporte}.xlsx`);
   };
 
   const handleExportPDF = () => {
@@ -87,16 +86,14 @@ function Informes() {
         });
         return fila;
       });
-
-      const totalFormateado = formatMoney(totalInforme);
-      exportToPDF(tipoReporte, reporteFormateado, totalFormateado, logoEmpresa);
+      exportToPDF(tipoReporte, reporteFormateado, formatMoney(totalInforme), logoEmpresa);
     }
   };
 
   if (loading && !data) return (
     <div className="h-screen flex flex-col items-center justify-center bg-white text-[#003366]">
       <Wind className="w-12 h-12 animate-spin mb-4" />
-      <span className="text-xs font-black uppercase tracking-[0.3em]">Cargando Sistema de Informes...</span>
+      <span className="text-xs font-black uppercase tracking-[0.3em]">Cargando Sistema...</span>
     </div>
   );
 
@@ -114,11 +111,12 @@ function Informes() {
       </div>
 
       {/* Selectores de Reporte */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 shrink-0">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 shrink-0">
         {[
           { id: 'inventario', label: 'Inventario General', icon: Package, activeClass: 'border-[#00529b] bg-blue-50/50 text-[#00529b]', iconClass: 'bg-[#00529b]' },
           { id: 'critico', label: 'Stock Crítico', icon: AlertCircle, activeClass: 'border-red-500 bg-red-50/50 text-red-700', iconClass: 'bg-red-500' },
-          { id: 'proveedores', label: 'Directorio Proveedores', icon: Users, activeClass: 'border-emerald-500 bg-emerald-50/50 text-emerald-700', iconClass: 'bg-emerald-500' }
+          { id: 'kardex', label: 'Historial Kárdex', icon: History, activeClass: 'border-amber-500 bg-amber-50/50 text-amber-700', iconClass: 'bg-amber-500' },
+          { id: 'proveedores', label: 'Proveedores', icon: Users, activeClass: 'border-emerald-500 bg-emerald-50/50 text-emerald-700', iconClass: 'bg-emerald-500' }
         ].map((btn) => (
           <button 
             key={btn.id} 
@@ -142,17 +140,50 @@ function Informes() {
       {/* Contenedor de Tabla */}
       <div className="bg-white rounded-[2.5rem] border-2 border-slate-50 shadow-2xl shadow-slate-200/50 flex flex-col flex-1 overflow-hidden mb-4">
         <div className="px-8 py-5 border-b border-slate-50 flex flex-col md:flex-row justify-between items-center gap-4 shrink-0 bg-white">
-          <div className="flex items-center gap-4">
-            <div>
-              <h2 className="text-[10px] font-black text-[#003366] uppercase tracking-[0.2em]">Vista Previa del Documento</h2>
-              {tipoReporte === 'inventario' && (
-                <div className="flex items-center gap-2 mt-1">
-                  <TrendingUp className="w-4 h-4 text-emerald-500" />
-                  <p className="text-emerald-600 font-black text-lg">{formatMoney(totalInforme)}</p>
+          <div className="flex flex-col gap-1">
+            <h2 className="text-[10px] font-black text-[#003366] uppercase tracking-[0.2em]">Vista Previa del Documento</h2>
+            {tipoReporte === 'inventario' && (
+              <div className="flex items-center gap-2 mt-1">
+                <TrendingUp className="w-4 h-4 text-emerald-500" />
+                <p className="text-emerald-600 font-black text-lg">{formatMoney(totalInforme)}</p>
+              </div>
+            )}
+            
+            {/* FILTROS DINÁMICOS PARA KÁRDEX */}
+            {tipoReporte === 'kardex' && (
+              <div className="flex items-center gap-3 mt-2">
+                <div className="relative">
+                  <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                  <input 
+                    type="text"
+                    placeholder="Filtrar producto..."
+                    className="pl-9 pr-4 py-2 bg-slate-50 border-none rounded-xl text-[11px] focus:ring-2 focus:ring-amber-500 outline-none w-48 transition-all"
+                    value={filtroProducto}
+                    onChange={(e) => setFiltroProducto(e.target.value)}
+                  />
                 </div>
-              )}
-            </div>
+                <div className="relative">
+                  <Filter className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                  <select 
+                    className="pl-9 pr-8 py-2 bg-slate-50 border-none rounded-xl text-[11px] focus:ring-2 focus:ring-amber-500 outline-none appearance-none cursor-pointer"
+                    value={filtroTipo}
+                    onChange={(e) => setFiltroTipo(e.target.value)}
+                  >
+                    <option value="todos">Todos</option>
+                    <option value="entrada">Entradas</option>
+                    <option value="salida">Salidas</option>
+                  </select>
+                </div>
+                <button 
+                  onClick={() => generarReporte('kardex')}
+                  className="bg-amber-500 hover:bg-amber-600 text-white px-4 py-2 rounded-xl text-[10px] font-bold transition-colors"
+                >
+                  APLICAR
+                </button>
+              </div>
+            )}
           </div>
+
           <div className="flex gap-3 w-full md:w-auto">
             <button onClick={handleExportPDF} className="flex-1 md:flex-none flex items-center justify-center gap-2 bg-[#003366] text-white px-6 py-3 rounded-xl text-xs font-bold hover:bg-[#001a33] transition-all">
               <FileText className="w-4 h-4" /> PDF
@@ -179,7 +210,7 @@ function Informes() {
                 <tr key={i} className="group hover:bg-slate-50/50 transition-colors responsive-tr">
                   {Object.entries(row).map(([key, val], j) => {
                     const isMainColumn = key.includes('PRODUCTO') || key.includes('NOMBRE');
-                    const isNumeric = key.includes('PRECIO') || key.includes('VALOR') || key.includes('CANTIDAD') || key.includes('STOCK');
+                    const isNumeric = key.includes('PRECIO') || key.includes('VALOR') || key.includes('CANT.') || key.includes('STOCK');
 
                     return (
                       <td
