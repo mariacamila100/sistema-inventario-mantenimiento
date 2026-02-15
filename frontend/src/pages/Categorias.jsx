@@ -290,9 +290,14 @@ function Categorias() {
                 <label className="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1">Descripción</label>
                 <textarea value={formData.descripcion} onChange={(e) => setFormData({ ...formData, descripcion: e.target.value })} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 outline-none focus:ring-4 focus:ring-[#003366]/5 transition-all h-28 resize-none text-sm font-medium" />
               </div>
-              <button type="submit" className="w-full py-3.5 bg-[#003366] text-white font-bold rounded-xl hover:bg-[#001a33] shadow-lg transition-all mt-2 active:scale-[0.98]">
-                {editingCategory ? 'Guardar Cambios' : 'Registrar Categoría'}
-              </button>
+              <div className="flex justify-center pt-0.5">
+                <button
+                  type="submit"
+                  className="w-full sm:w-1/3 py-3.5 bg-[#003366] text-white font-black rounded-2xl hover:bg-[#001a33] shadow-lg shadow-blue-900/20 transition-all uppercase tracking-widest text-xs active:scale-95"
+                >
+                  {editingCategory ? 'Guardar Cambios' : 'Registrar '}
+                </button>
+              </div>
             </form>
           </div>
         </div>

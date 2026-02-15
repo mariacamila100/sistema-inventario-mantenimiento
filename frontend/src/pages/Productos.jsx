@@ -304,7 +304,7 @@ function Productos() {
         </div>
         {/* Paginación Minimalista y Limpia */}
         {!loading && filtered.length > 0 && (
-          <div className="p-6 bg-slate-50/50 border-t border-slate-100 flex flex-col sm:flex-row justify-between items-center gap-4">
+          <div className="p-4 bg-slate-50/50 border-t border-slate-100 flex flex-col sm:flex-row justify-between items-center gap-4">
 
             {/* Contador de registros (Mantiene tu texto original) */}
             <p className="text-sm text-slate-500 font-medium">
@@ -344,97 +344,101 @@ function Productos() {
         )}
       </div>
 
-      {showModal && (
-        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center z-[120] p-2 sm:p-4">
-          <div className="bg-white rounded-[2rem] sm:rounded-[2.5rem] p-5 sm:p-8 lg:p-10 w-full max-w-2xl shadow-2xl animate-in zoom-in duration-200 max-h-[95vh] overflow-y-auto">
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-xl sm:text-2xl font-black text-slate-900 uppercase tracking-tight">{editingProduct ? 'Editar Producto' : 'Nuevo Producto'}</h2>
-              <button onClick={closeModal} className="p-2 bg-slate-50 rounded-full text-slate-400 hover:text-red-500 transition-colors">
-                <X className="w-6 h-6" />
-              </button>
+    {showModal && (
+  <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center z-[120] p-2">
+    {/* Reducimos el padding general de p-8 a p-6 para ganar espacio vertical */}
+    <div className="bg-white rounded-[2rem] sm:rounded-[2.5rem] p-6 sm:p-7 w-full max-w-2xl shadow-2xl animate-in zoom-in duration-200 border-4 border-white overflow-hidden">
+      
+      <div className="flex justify-between items-center mb-4">
+        <h2 className="text-xl sm:text-2xl font-black text-slate-900 uppercase tracking-tight">
+          {editingProduct ? 'Editar Producto' : 'Nuevo Producto'}
+        </h2>
+        <button onClick={closeModal} className="p-2 bg-slate-50 rounded-full text-slate-400 hover:text-red-500 transition-colors">
+          <X className="w-5 h-5" />
+        </button>
+      </div>
+
+      <form onSubmit={handleSubmit} className="space-y-3">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-2.5">
+          
+          {/* Código y Nombre */}
+          <div className="space-y-1">
+            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider ml-1">Código *</label>
+            <input required type="text" disabled={!!editingProduct} value={formData.codigo} onChange={(e) => setFormData({ ...formData, codigo: e.target.value })} className="w-full px-4 py-2 rounded-xl border border-slate-200 outline-none focus:ring-4 focus:ring-[#003366]/5 disabled:bg-slate-50 uppercase font-mono text-xs" />
+          </div>
+
+          <div className="space-y-1">
+            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider ml-1">Nombre *</label>
+            <input required type="text" value={formData.nombre} onChange={(e) => setFormData({ ...formData, nombre: e.target.value })} className="w-full px-4 py-2 rounded-xl border border-slate-200 outline-none focus:ring-4 focus:ring-[#003366]/5 text-xs font-bold" />
+          </div>
+
+          {/* Categoría y Marca */}
+          <div className="space-y-1">
+            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider ml-1">Categoría *</label>
+            <select required value={formData.categoria_id} onChange={(e) => setFormData({ ...formData, categoria_id: e.target.value })} className="w-full px-4 py-2 rounded-xl border border-slate-200 bg-white text-xs font-medium">
+              <option value="">Seleccionar...</option>
+              {categorias.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
+            </select>
+          </div>
+
+          <div className="space-y-1">
+            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider ml-1">Marca *</label>
+            <select required value={formData.marca_id} onChange={(e) => setFormData({ ...formData, marca_id: e.target.value })} className="w-full px-4 py-2 rounded-xl border border-slate-200 bg-white text-xs font-medium">
+              <option value="">Seleccionar...</option>
+              {marcas.map(m => <option key={m.id} value={m.id}>{m.nombre}</option>)}
+            </select>
+          </div>
+
+          {/* Proveedor y Stock Actual */}
+          <div className="space-y-1">
+            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider ml-1">Proveedor *</label>
+            <select required value={formData.proveedor_id} onChange={(e) => setFormData({ ...formData, proveedor_id: e.target.value })} className="w-full px-4 py-2 rounded-xl border border-slate-200 bg-white text-xs font-medium">
+              <option value="">Seleccionar...</option>
+              {proveedores.map(p => <option key={p.id} value={p.id}>{p.nombre}</option>)}
+            </select>
+          </div>
+
+          <div className="space-y-1">
+            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider ml-1">Stock Actual</label>
+            <input type="number" disabled={!!editingProduct} value={formData.stock_actual} onChange={(e) => setFormData({ ...formData, stock_actual: e.target.value })} className="w-full px-4 py-2 rounded-xl border border-slate-200 outline-none text-xs font-bold" />
+          </div>
+
+          {/* Stock Mínimo y Precio */}
+          <div className="space-y-1">
+            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider ml-1">Stock Mínimo</label>
+            <input type="number" value={formData.stock_minimo} onChange={(e) => setFormData({ ...formData, stock_minimo: e.target.value })} className="w-full px-4 py-2 rounded-xl border border-slate-200 outline-none text-xs font-bold" />
+          </div>
+
+          <div className="space-y-1">
+            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider ml-1">Precio Unitario ($)</label>
+            <input type="text" value={formData.precio_unitario} onChange={(e) => setFormData({ ...formData, precio_unitario: e.target.value.replace(/[^0-9.,]/g, '') })} className="w-full px-4 py-2 rounded-xl border border-slate-200 outline-none font-bold text-[#003366] text-xs" />
+          </div>
+
+          {/* ÚLTIMA FILA COMPARTIDA: Ubicación y Descripción */}
+          <div className="space-y-1">
+            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider ml-1">Ubicación Almacén</label>
+            <div className="relative">
+              <MapPin className="absolute left-3 top-2 w-3.5 h-3.5 text-slate-400" />
+              <input type="text" value={formData.ubicacion} onChange={(e) => setFormData({ ...formData, ubicacion: e.target.value })} className="w-full pl-9 pr-4 py-2 rounded-xl border border-slate-200 text-xs font-medium" />
             </div>
+          </div>
 
-            <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1">Código *</label>
-                  <input required type="text" disabled={!!editingProduct} value={formData.codigo} onChange={(e) => setFormData({ ...formData, codigo: e.target.value })} className="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none focus:ring-4 focus:ring-[#003366]/5 disabled:bg-slate-50 uppercase font-mono text-sm" />
-                </div>
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1">Nombre *</label>
-                  <input required type="text" value={formData.nombre} onChange={(e) => setFormData({ ...formData, nombre: e.target.value })} className="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none focus:ring-4 focus:ring-[#003366]/5 text-sm font-bold" />
-                </div>
-
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1">Categoría *</label>
-                  <select required value={formData.categoria_id} onChange={(e) => setFormData({ ...formData, categoria_id: e.target.value })} className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-white outline-none focus:ring-4 focus:ring-[#003366]/5 text-sm font-medium">
-                    <option value="">Seleccionar...</option>
-                    {categorias.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
-                  </select>
-                </div>
-
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1">Marca *</label>
-                  <select required value={formData.marca_id} onChange={(e) => setFormData({ ...formData, marca_id: e.target.value })} className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-white outline-none focus:ring-4 focus:ring-[#003366]/5 text-sm font-medium">
-                    <option value="">Seleccionar Marca...</option>
-                    {marcas.map(m => <option key={m.id} value={m.id}>{m.nombre}</option>)}
-                  </select>
-                </div>
-
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1">Proveedor *</label>
-                  <select required value={formData.proveedor_id} onChange={(e) => setFormData({ ...formData, proveedor_id: e.target.value })} className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-white outline-none focus:ring-4 focus:ring-[#003366]/5 text-sm font-medium">
-                    <option value="">Seleccionar...</option>
-                    {proveedores.map(p => <option key={p.id} value={p.id}>{p.nombre}</option>)}
-                  </select>
-                </div>
-
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1">Stock Actual</label>
-                  <input type="number" disabled={!!editingProduct} value={formData.stock_actual} onChange={(e) => setFormData({ ...formData, stock_actual: e.target.value })} className={`w-full px-4 py-3 rounded-xl border border-slate-200 outline-none focus:ring-4 focus:ring-[#003366]/5 text-sm font-bold ${!!editingProduct ? 'bg-slate-50 text-slate-400 cursor-not-allowed' : ''}`} />
-                  {editingProduct && <p className="text-[10px] text-[#003366] font-black ml-1 italic">* Ajustar vía Movimientos</p>}
-                </div>
-
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1">Stock Mínimo</label>
-                  <input type="number" value={formData.stock_minimo} onChange={(e) => setFormData({ ...formData, stock_minimo: e.target.value })} className="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none focus:ring-4 focus:ring-[#003366]/5 text-sm font-bold" />
-                </div>
-
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1">Precio Unitario ($)</label>
-                  <input
-                    type="text"
-                    placeholder="Ej: 1.500.000"
-                    value={formData.precio_unitario}
-                    onChange={(e) => {
-                      const val = e.target.value.replace(/[^0-9.,]/g, '');
-                      setFormData({ ...formData, precio_unitario: val });
-                    }}
-                    className="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none focus:ring-4 focus:ring-[#003366]/5 font-bold text-[#003366] text-sm"
-                  />
-                </div>
-
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1">Ubicación Almacén</label>
-                  <div className="relative">
-                    <MapPin className="absolute left-4 top-3.5 w-4 h-4 text-slate-400" />
-                    <input type="text" value={formData.ubicacion} onChange={(e) => setFormData({ ...formData, ubicacion: e.target.value })} className="w-full pl-11 pr-4 py-3 rounded-xl border border-slate-200 outline-none focus:ring-4 focus:ring-[#003366]/5 text-sm font-medium" />
-                  </div>
-                </div>
-
-                <div className="md:col-span-2 space-y-1.5">
-                  <label className="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1">Descripción del Ítem</label>
-                  <textarea value={formData.descripcion} onChange={(e) => setFormData({ ...formData, descripcion: e.target.value })} className="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none focus:ring-4 focus:ring-[#003366]/5 h-20 resize-none text-sm font-medium" />
-                </div>
-              </div>
-
-              <button type="submit" className="w-full py-4 bg-[#003366] text-white font-black rounded-xl hover:bg-[#001a33] shadow-lg shadow-blue-900/10 transition-all mt-4 uppercase tracking-widest text-sm">
-                {editingProduct ? 'Guardar Cambios' : 'Registrar Producto'}
-              </button>
-            </form>
+          <div className="space-y-1">
+            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider ml-1">Descripción del Ítem</label>
+            <input type="text" value={formData.descripcion} onChange={(e) => setFormData({ ...formData, descripcion: e.target.value })} placeholder="Breve detalle..." className="w-full px-4 py-2 rounded-xl border border-slate-200 outline-none text-xs font-medium" />
           </div>
         </div>
-      )}
+
+        {/* Botón más compacto y centrado */}
+        <div className="flex justify-center pt-2">
+          <button type="submit" className="w-full sm:w-1/3 py-3 bg-[#003366] text-white font-black rounded-2xl hover:bg-[#001a33] shadow-lg shadow-blue-900/20 transition-all uppercase tracking-widest text-xs">
+            {editingProduct ? 'Guardar Cambios' : 'Registrar Producto'}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+)}
 
       {/* DIÁLOGO DE CONFIRMACIÓN INTEGRADO */}
       <ConfirmDialog

@@ -18,9 +18,7 @@ exports.getMovimientos = async (req, res) => {
         res.status(500).json({ error: err.message });
     }
 };
-
 exports.createMovimiento = async (req, res) => {
-    // 1. Recibimos proveedor_id desde el body
     const { 
         producto_id, 
         tipo, 
@@ -28,51 +26,48 @@ exports.createMovimiento = async (req, res) => {
         motivo, 
         observaciones, 
         numero_documento,
-        proveedor_id // <-- Añadido
+        proveedor_id,
+        precio_historico // Cambiado para que coincida con lo que envía React
     } = req.body;
     
     const usuarioId = req.user?.id;
-
-    if (!usuarioId) return res.status(401).json({ error: 'Sesión expirada' });
-
     const connection = await db.getConnection();
+
     try {
         await connection.beginTransaction();
-
-        // IMPORTANTE: Definir usuario para los Triggers de auditoría
         await connection.query('SET @usuario_id = ?', [usuarioId]);
 
-        // 2. Validar existencia y stock
+        // 1. Obtener datos del producto
         const [prodResult] = await connection.query(
-            'SELECT stock_actual FROM productos WHERE id = ?', [producto_id]
+            'SELECT stock_actual, precio_unitario FROM productos WHERE id = ?', [producto_id]
         );
 
         if (prodResult.length === 0) throw new Error('El producto no existe');
-        
-        const stockDisponible = prodResult[0].stock_actual;
 
-        if (tipo === 'salida' && stockDisponible < cantidad) {
-            throw new Error(`Stock insuficiente. Solo hay ${stockDisponible} unidades disponibles.`);
-        }
+        // 2. Lógica de precio: 
+        // Si el usuario digitó un precio (el de venta), usamos ese.
+        // Si no (ej. una entrada de stock normal), usamos el precio base del producto.
+        const valorAGuardar = precio_historico || prodResult[0].precio_unitario;
 
-        // 3. Insertar movimiento (Incluyendo proveedor_id)
         const insertQuery = `
             INSERT INTO movimientos 
-            (producto_id, tipo, cantidad, motivo, usuario_id, observaciones, numero_documento, proveedor_id)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            (producto_id, tipo, cantidad, precio_historico, motivo, usuario_id, observaciones, numero_documento, proveedor_id)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
         `;
-        const [result] = await connection.query(insertQuery, [
+        
+        await connection.query(insertQuery, [
             producto_id, 
             tipo, 
             cantidad, 
+            valorAGuardar, 
             motivo, 
             usuarioId, 
             observaciones || null, 
             numero_documento || null,
-            proveedor_id || null // <-- Añadido
+            proveedor_id || null
         ]);
 
-        // 4. Actualizar stock del producto
+        // 3. Actualización de Stock
         const stockChange = tipo === 'entrada' ? cantidad : -cantidad;
         await connection.query(
             'UPDATE productos SET stock_actual = stock_actual + ? WHERE id = ?',
@@ -80,14 +75,10 @@ exports.createMovimiento = async (req, res) => {
         );
 
         await connection.commit();
-        res.status(201).json({ 
-            message: 'Movimiento registrado con éxito', 
-            id: result.insertId 
-        });
+        res.status(201).json({ message: 'Movimiento registrado con éxito' });
 
     } catch (err) {
         await connection.rollback();
-        // Enviamos un mensaje más amigable al frontend
         res.status(400).json({ error: err.message });
     } finally {
         connection.release();

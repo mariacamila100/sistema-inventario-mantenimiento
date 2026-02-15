@@ -260,7 +260,7 @@ function Proveedores() {
         </div>
         {/* Paginación Minimalista y Limpia */}
         {!loading && filtered.length > 0 && (
-          <div className="p-6 bg-slate-50/50 border-t border-slate-100 flex flex-col sm:flex-row justify-between items-center gap-4">
+          <div className="p-4 bg-slate-50/50 border-t border-slate-100 flex flex-col sm:flex-row justify-between items-center gap-4">
 
             {/* Contador de registros (Mantiene tu texto original) */}
             <p className="text-sm text-slate-500 font-medium">
