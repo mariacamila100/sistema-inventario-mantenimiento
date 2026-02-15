@@ -149,7 +149,7 @@ function Login({ onLoginSuccess }) {
                 "Entrar al Almacén"
               )}
             </button>
-            {/* Botón de Registro */}
+            {/* Botón de Registro 
             <div className="mt-8 text-center">
               <p className="text-slate-500 font-medium">
                 ¿No tienes una cuenta?{' '}
@@ -161,7 +161,9 @@ function Login({ onLoginSuccess }) {
                 </button>
               </p>
             </div>
+            */}
           </form>
+          
 
           <div className="mt-16">
             <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mb-4 text-center lg:text-left border-b border-slate-100 pb-2">Aliados Estratégicos</p>

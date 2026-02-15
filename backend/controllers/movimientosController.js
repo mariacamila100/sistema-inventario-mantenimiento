@@ -20,7 +20,6 @@ exports.getMovimientos = async (req, res) => {
 };
 
 exports.createMovimiento = async (req, res) => {
-    // Ya no extraemos 'observaciones' porque se eliminó de la tabla
     const { 
         producto_id, tipo, cantidad, motivo, 
         numero_documento, proveedor_id, precio_historico 
@@ -32,20 +31,22 @@ exports.createMovimiento = async (req, res) => {
     try {
         await connection.beginTransaction();
         
-        // Seteamos el ID de usuario para posibles triggers de auditoría
+        // Seteamos el ID para los triggers de auditoría (ya sin el problema del DEFINER)
         await connection.query('SET @usuario_id = ?', [usuarioId]);
 
-        // 1. Obtener datos actuales del producto
+        // 1. Obtener datos actuales (Usamos FOR UPDATE para bloquear la fila y evitar errores de cálculo si otro proceso intenta escribir)
         const [prodResult] = await connection.query(
-            'SELECT stock_actual, precio_unitario FROM productos WHERE id = ?', [producto_id]
+            'SELECT stock_actual, precio_unitario FROM productos WHERE id = ? FOR UPDATE', [producto_id]
         );
         if (prodResult.length === 0) throw new Error('El producto no existe');
 
-        // Definimos el precio: usamos el enviado o el que ya tiene el producto
-        const valorAGuardar = precio_historico || prodResult[0].precio_unitario;
+        const stockActual = Number(prodResult[0].stock_actual);
+        const precioActual = Number(prodResult[0].precio_unitario);
+        
+        // Normalizamos el precio que llega (puedes usar tu función normalizarPrecio aquí)
+        const valorNuevoMovimiento = Number(precio_historico) || precioActual;
 
-        // 2. Insertar Movimiento (Sin la columna observaciones)
-        // Corregido: Se eliminó la doble coma y la referencia a observaciones
+        // 2. Insertar Movimiento en el Kárdex
         const insertQuery = `
             INSERT INTO movimientos 
             (producto_id, tipo, cantidad, precio_historico, motivo, usuario_id, numero_documento, proveedor_id)
@@ -53,25 +54,34 @@ exports.createMovimiento = async (req, res) => {
         `;
         
         await connection.query(insertQuery, [
-            producto_id, 
-            tipo, 
-            cantidad, 
-            valorAGuardar, 
-            motivo, 
-            usuarioId, 
-            numero_documento || null, 
-            proveedor_id || null
+            producto_id, tipo, cantidad, valorNuevoMovimiento, motivo, 
+            usuarioId, numero_documento || null, proveedor_id || null
         ]);
 
-        // 3. Actualización de Stock Y PRECIO Maestro
+        // 3. Lógica de Actualización de Stock y Precio Maestro
         if (tipo === 'entrada') {
-            // ENTRADA: Suma stock y ACTUALIZA el precio unitario del catálogo
+            // --- CÁLCULO DE PROMEDIO PONDERADO ---
+            // Fórmula: ((Stock Viejo * Precio Viejo) + (Stock Nuevo * Precio Nuevo)) / Stock Total
+            const inversionActual = stockActual * precioActual;
+            const inversionNueva = cantidad * valorNuevoMovimiento;
+            const nuevoStockTotal = stockActual + cantidad;
+            
+            let nuevoPrecioPromedio;
+            if (stockActual <= 0) {
+                // Si no había stock, el nuevo precio es simplemente el de la compra actual
+                nuevoPrecioPromedio = valorNuevoMovimiento;
+            } else {
+                nuevoPrecioPromedio = (inversionActual + inversionNueva) / nuevoStockTotal;
+            }
+
             await connection.query(
-                'UPDATE productos SET stock_actual = stock_actual + ?, precio_unitario = ? WHERE id = ?',
-                [cantidad, valorAGuardar, producto_id]
+                'UPDATE productos SET stock_actual = ?, precio_unitario = ? WHERE id = ?',
+                [nuevoStockTotal, nuevoPrecioPromedio, producto_id]
             );
         } else {
-            // SALIDA: Solo resta stock, el precio del catálogo no cambia
+            // SALIDA: Solo resta stock. El precio unitario (promedio) NO cambia cuando vendes.
+            if (stockActual < cantidad) throw new Error('Stock insuficiente para esta salida');
+            
             await connection.query(
                 'UPDATE productos SET stock_actual = stock_actual - ? WHERE id = ?',
                 [cantidad, producto_id]
@@ -79,7 +89,7 @@ exports.createMovimiento = async (req, res) => {
         }
 
         await connection.commit();
-        res.status(201).json({ message: 'Movimiento registrado y catálogo actualizado' });
+        res.status(201).json({ message: 'Movimiento registrado y precio promedio actualizado' });
     } catch (err) {
         await connection.rollback();
         res.status(400).json({ error: err.message });
