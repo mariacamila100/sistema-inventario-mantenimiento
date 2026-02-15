@@ -283,12 +283,12 @@ function Movimientos() {
         )}
       </div>
 
-      {showModal && (
+     {showModal && (
         <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center z-[120] p-2">
           <div className="bg-white rounded-[2rem] p-6 sm:p-8 w-full max-w-2xl shadow-2xl animate-in zoom-in duration-200 border-4 border-white">
             
             <div className="flex justify-between items-center mb-5">
-              <h2 className="text-xl sm:text-2xl font-black text-slate-900 uppercase tracking-tight">Nuevo Registro</h2>
+              <h2 className="text-xl sm:text-2xl font-black text-slate-900 uppercase tracking-tight italic">Nuevo Registro</h2>
               <button onClick={closeModal} className="p-2 bg-slate-50 rounded-full text-slate-400 hover:text-red-500 transition-colors">
                 <X className="w-5 h-5" />
               </button>
@@ -342,7 +342,7 @@ function Movimientos() {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                 <div className="space-y-1">
                   <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider ml-1">Tipo</label>
-                  <select value={formData.tipo} onChange={(e) => setFormData({ ...formData, tipo: e.target.value })} className={`w-full px-4 py-2.5 rounded-xl border border-slate-200 font-black outline-none text-xs appearance-none transition-colors ${formData.tipo === 'entrada' ? 'text-emerald-600' : 'text-rose-600'}`}>
+                  <select value={formData.tipo} onChange={(e) => setFormData({ ...formData, tipo: e.target.value })} className={`w-full px-4 py-2.5 rounded-xl border border-slate-200 font-black outline-none text-xs appearance-none transition-colors ${formData.tipo === 'entrada' ? 'text-emerald-600 bg-emerald-50/10' : 'text-rose-600 bg-rose-50/10'}`}>
                     <option value="entrada">ENTRADA</option>
                     <option value="salida">SALIDA</option>
                   </select>
@@ -354,11 +354,16 @@ function Movimientos() {
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider ml-1">Precio venta *</label>
+                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider ml-1">
+                    {formData.tipo === 'entrada' ? 'Costo Compra *' : 'Precio Venta *'}
+                  </label>
                   <div className="relative">
                     <DollarSign className="absolute left-3.5 top-2.5 w-4 h-4 text-slate-400" />
                     <input type="number" required step="0.01" value={formData.precio_historico} onChange={(e) => setFormData({ ...formData, precio_historico: e.target.value })} placeholder="0.00" className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 font-bold outline-none text-xs text-[#003366]" />
                   </div>
+                  {formData.tipo === 'entrada' && (
+                    <p className="text-[8px] text-emerald-600 font-black uppercase tracking-widest mt-1 ml-1">※ Actualiza el catálogo</p>
+                  )}
                 </div>
               </div>
 

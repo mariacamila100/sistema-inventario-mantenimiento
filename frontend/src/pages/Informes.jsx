@@ -14,7 +14,6 @@ function Informes() {
   const [tipoReporte, setTipoReporte] = useState('inventario');
   const [totalInforme, setTotalInforme] = useState(0);
 
-  // Estados para filtros del Kárdex
   const [filtroProducto, setFiltroProducto] = useState('');
   const [filtroTipo, setFiltroTipo] = useState('todos');
 
@@ -80,13 +79,14 @@ function Informes() {
       const reporteFormateado = reporteActual.map(row => {
         const fila = { ...row };
         Object.keys(fila).forEach(key => {
-          if (key.includes('PRECIO') || key.includes('VALOR')) {
+          // Ajustado para detectar PRECIO, VALOR, SUBTOTAL e HISTÓRICO
+          if (key.includes('PRECIO') || key.includes('VALOR') || key.includes('SUBTOTAL') || key.includes('HISTÓRICO')) {
             fila[key] = formatMoney(fila[key]);
           }
         });
         return fila;
       });
-      exportToPDF(tipoReporte, reporteFormateado, formatMoney(totalInforme), logoEmpresa);
+      exportToPDF(tipoReporte, reporteFormateado, totalInforme > 0 ? formatMoney(totalInforme) : null, logoEmpresa);
     }
   };
 
@@ -110,7 +110,6 @@ function Informes() {
         </div>
       </div>
 
-      {/* Selectores de Reporte */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 shrink-0">
         {[
           { id: 'inventario', label: 'Inventario General', icon: Package, activeClass: 'border-[#00529b] bg-blue-50/50 text-[#00529b]', iconClass: 'bg-[#00529b]' },
@@ -137,7 +136,6 @@ function Informes() {
         ))}
       </div>
 
-      {/* Contenedor de Tabla */}
       <div className="bg-white rounded-[2.5rem] border-2 border-slate-50 shadow-2xl shadow-slate-200/50 flex flex-col flex-1 overflow-hidden mb-4">
         <div className="px-8 py-5 border-b border-slate-50 flex flex-col md:flex-row justify-between items-center gap-4 shrink-0 bg-white">
           <div className="flex flex-col gap-1">
@@ -149,7 +147,6 @@ function Informes() {
               </div>
             )}
             
-            {/* FILTROS DINÁMICOS PARA KÁRDEX */}
             {tipoReporte === 'kardex' && (
               <div className="flex items-center gap-3 mt-2">
                 <div className="relative">
@@ -210,7 +207,7 @@ function Informes() {
                 <tr key={i} className="group hover:bg-slate-50/50 transition-colors responsive-tr">
                   {Object.entries(row).map(([key, val], j) => {
                     const isMainColumn = key.includes('PRODUCTO') || key.includes('NOMBRE');
-                    const isNumeric = key.includes('PRECIO') || key.includes('VALOR') || key.includes('CANT.') || key.includes('STOCK');
+                    const isNumeric = key.includes('PRECIO') || key.includes('VALOR') || key.includes('CANT.') || key.includes('STOCK') || key.includes('SUBTOTAL') || key.includes('HISTÓRICO');
 
                     return (
                       <td
@@ -221,7 +218,7 @@ function Informes() {
                         }`}
                       >
                         <span className={`${isNumeric ? 'font-mono text-slate-600' : ''}`}>
-                          {key.includes('PRECIO') || key.includes('VALOR') ? formatMoney(val) : val}
+                          {(key.includes('PRECIO') || key.includes('VALOR') || key.includes('SUBTOTAL') || key.includes('HISTÓRICO')) ? formatMoney(val) : val}
                         </span>
                       </td>
                     );
@@ -239,40 +236,6 @@ function Informes() {
         </div>
       </div>
 
-      <style dangerouslySetInnerHTML={{
-        __html: `
-        .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; } 
-        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
-
-        @media (max-width: 768px) {
-          .table-responsive thead { display: none; }
-          .responsive-tr {
-            display: block;
-            border: 1px solid #f1f5f9;
-            margin: 1rem;
-            border-radius: 1.5rem;
-            padding: 0.5rem;
-            background: white;
-          }
-          .responsive-td {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 0.6rem 1rem !important;
-            border-bottom: 1px solid #f8fafc !important;
-          }
-          .responsive-td:last-child { border-bottom: none !important; }
-          .responsive-td::before {
-            content: attr(data-label);
-            font-weight: 800;
-            font-size: 0.65rem;
-            text-transform: uppercase;
-            color: #94a3b8;
-          }
-        }
-      ` }} />
     </div>
   );
 }

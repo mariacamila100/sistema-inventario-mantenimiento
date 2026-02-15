@@ -10,8 +10,8 @@ const informesController = {
                     IFNULL(m.nombre, '—') AS 'MARCA', 
                     IFNULL(c.nombre, '—') AS 'CATEGORÍA', 
                     p.stock_actual AS 'STOCK', 
-                    ROUND(p.precio_unitario, 0) AS 'PRECIO UNITARIO', 
-                    ROUND((p.stock_actual * p.precio_unitario), 0) AS 'VALOR TOTAL'
+                    p.precio_unitario AS 'PRECIO UNITARIO', 
+                    (p.stock_actual * p.precio_unitario) AS 'VALOR TOTAL'
                 FROM productos p
                 LEFT JOIN marcas m ON p.marca_id = m.id
                 LEFT JOIN categorias c ON p.categoria_id = c.id
@@ -19,6 +19,7 @@ const informesController = {
                 ORDER BY p.nombre ASC`;
 
             const [rows] = await db.query(query);
+            // Sumatoria basada en el precio maestro actual (Valorización de Reposición)
             const granTotal = rows.reduce((acc, item) => acc + parseFloat(item['VALOR TOTAL'] || 0), 0);
 
             res.json({ detalles: rows, sumatoriaTotal: granTotal });
@@ -57,11 +58,10 @@ const informesController = {
             res.status(500).json({ error: 'Error al obtener proveedores' });
         }
     },
-// ... (dentro del objeto informesController)
 
-getKardex: async (req, res) => {
+    getKardex: async (req, res) => {
         try {
-            const { producto, tipo } = req.query; // Capturamos filtros
+            const { producto, tipo } = req.query;
             let valores = [];
             
             let query = `
@@ -70,13 +70,14 @@ getKardex: async (req, res) => {
                     p.nombre AS 'PRODUCTO',
                     UPPER(m.tipo) AS 'OPERACIÓN',
                     m.cantidad AS 'CANT.',
+                    m.precio_historico AS 'PRECIO HISTÓRICO', 
+                    (m.cantidad * m.precio_historico) AS 'SUBTOTAL',
                     IFNULL(m.numero_documento, '—') AS 'DOCUMENTO',
-                    IFNULL(u.nombre_completo, 'Sistema') AS 'RESPONSABLE',
-                    IFNULL(m.motivo, 'Sin detalle') AS 'DETALLE'
+                    IFNULL(u.username, 'Sistema') AS 'RESPONSABLE'
                 FROM movimientos m
                 INNER JOIN productos p ON m.producto_id = p.id
                 LEFT JOIN usuarios u ON m.usuario_id = u.id
-                WHERE 1=1`; // Truco para concatenar filtros fácilmente
+                WHERE 1=1`;
 
             if (producto) {
                 query += ` AND p.nombre LIKE ?`;
@@ -88,7 +89,7 @@ getKardex: async (req, res) => {
                 valores.push(tipo);
             }
 
-            query += ` ORDER BY m.fecha DESC LIMIT 100`;
+            query += ` ORDER BY m.fecha DESC LIMIT 150`;
 
             const [rows] = await db.query(query, valores);
             res.json(rows);
@@ -97,6 +98,7 @@ getKardex: async (req, res) => {
             res.status(500).json({ error: 'Error al filtrar el historial' });
         }
     },
+
     getResumenInventario: async (req, res) => {
         try {
             const [resumen] = await db.query('SELECT SUM(stock_actual * precio_unitario) as valor_inventario FROM productos WHERE estado = "Activo"');

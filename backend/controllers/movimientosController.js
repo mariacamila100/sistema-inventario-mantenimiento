@@ -18,16 +18,12 @@ exports.getMovimientos = async (req, res) => {
         res.status(500).json({ error: err.message });
     }
 };
+
 exports.createMovimiento = async (req, res) => {
+    // Ya no extraemos 'observaciones' porque se eliminó de la tabla
     const { 
-        producto_id, 
-        tipo, 
-        cantidad, 
-        motivo, 
-        observaciones, 
-        numero_documento,
-        proveedor_id,
-        precio_historico // Cambiado para que coincida con lo que envía React
+        producto_id, tipo, cantidad, motivo, 
+        numero_documento, proveedor_id, precio_historico 
     } = req.body;
     
     const usuarioId = req.user?.id;
@@ -35,24 +31,25 @@ exports.createMovimiento = async (req, res) => {
 
     try {
         await connection.beginTransaction();
+        
+        // Seteamos el ID de usuario para posibles triggers de auditoría
         await connection.query('SET @usuario_id = ?', [usuarioId]);
 
-        // 1. Obtener datos del producto
+        // 1. Obtener datos actuales del producto
         const [prodResult] = await connection.query(
             'SELECT stock_actual, precio_unitario FROM productos WHERE id = ?', [producto_id]
         );
-
         if (prodResult.length === 0) throw new Error('El producto no existe');
 
-        // 2. Lógica de precio: 
-        // Si el usuario digitó un precio (el de venta), usamos ese.
-        // Si no (ej. una entrada de stock normal), usamos el precio base del producto.
+        // Definimos el precio: usamos el enviado o el que ya tiene el producto
         const valorAGuardar = precio_historico || prodResult[0].precio_unitario;
 
+        // 2. Insertar Movimiento (Sin la columna observaciones)
+        // Corregido: Se eliminó la doble coma y la referencia a observaciones
         const insertQuery = `
             INSERT INTO movimientos 
-            (producto_id, tipo, cantidad, precio_historico, motivo, usuario_id, observaciones, numero_documento, proveedor_id)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            (producto_id, tipo, cantidad, precio_historico, motivo, usuario_id, numero_documento, proveedor_id)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         `;
         
         await connection.query(insertQuery, [
@@ -62,21 +59,27 @@ exports.createMovimiento = async (req, res) => {
             valorAGuardar, 
             motivo, 
             usuarioId, 
-            observaciones || null, 
-            numero_documento || null,
+            numero_documento || null, 
             proveedor_id || null
         ]);
 
-        // 3. Actualización de Stock
-        const stockChange = tipo === 'entrada' ? cantidad : -cantidad;
-        await connection.query(
-            'UPDATE productos SET stock_actual = stock_actual + ? WHERE id = ?',
-            [stockChange, producto_id]
-        );
+        // 3. Actualización de Stock Y PRECIO Maestro
+        if (tipo === 'entrada') {
+            // ENTRADA: Suma stock y ACTUALIZA el precio unitario del catálogo
+            await connection.query(
+                'UPDATE productos SET stock_actual = stock_actual + ?, precio_unitario = ? WHERE id = ?',
+                [cantidad, valorAGuardar, producto_id]
+            );
+        } else {
+            // SALIDA: Solo resta stock, el precio del catálogo no cambia
+            await connection.query(
+                'UPDATE productos SET stock_actual = stock_actual - ? WHERE id = ?',
+                [cantidad, producto_id]
+            );
+        }
 
         await connection.commit();
-        res.status(201).json({ message: 'Movimiento registrado con éxito' });
-
+        res.status(201).json({ message: 'Movimiento registrado y catálogo actualizado' });
     } catch (err) {
         await connection.rollback();
         res.status(400).json({ error: err.message });
