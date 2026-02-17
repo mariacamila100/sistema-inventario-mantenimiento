@@ -1,54 +1,53 @@
 const db = require('../config/database');
 
 const informesController = {
-    getInventarioCompleto: async (req, res) => {
-    try {
-        const { marca, categoria, mes } = req.query;
-        let valores = [];
-        
-        let query = `
-            SELECT 
-                p.codigo AS 'CÓDIGO', 
-                p.nombre AS 'PRODUCTO', 
-                IFNULL(m.nombre, '—') AS 'MARCA', 
-                IFNULL(c.nombre, '—') AS 'CATEGORÍA', 
-                p.stock_actual AS 'STOCK', 
-                p.precio_unitario AS 'PRECIO UNITARIO', 
-                (p.stock_actual * p.precio_unitario) AS 'VALOR TOTAL'
-            FROM productos p
-            LEFT JOIN marcas m ON p.marca_id = m.id
-            LEFT JOIN categorias c ON p.categoria_id = c.id
-            WHERE p.estado = 'Activo'`;
+getInventarioCompleto: async (req, res) => {
+        try {
+            // Cambiado 'categoria' por 'bodega'
+            const { marca, bodega, mes } = req.query; 
+            let valores = [];
+            
+            let query = `
+                SELECT 
+                    p.codigo AS 'CÓDIGO', 
+                    p.nombre AS 'PRODUCTO', 
+                    IFNULL(m.nombre, '—') AS 'MARCA', 
+                    IFNULL(b.nombre, '—') AS 'BODEGA', -- Cambio de categoría a bodega
+                    p.stock_actual AS 'STOCK', 
+                    p.precio_unitario AS 'PRECIO UNITARIO', 
+                    (p.stock_actual * p.precio_unitario) AS 'VALOR TOTAL'
+                FROM productos p
+                LEFT JOIN marcas m ON p.marca_id = m.id
+                LEFT JOIN bodegas b ON p.bodega_id = b.id -- Join con bodegas
+                WHERE p.estado = 'Activo'`;
 
-        // Filtro por Marca
-        if (marca && marca !== 'todas') {
-            query += ` AND p.marca_id = ?`;
-            valores.push(marca);
+            if (marca && marca !== 'todas') {
+                query += ` AND p.marca_id = ?`;
+                valores.push(marca);
+            }
+
+            // Filtro por Bodega (antes categoría)
+            if (bodega && bodega !== 'todas') {
+                query += ` AND p.bodega_id = ?`;
+                valores.push(bodega);
+            }
+
+            if (mes && mes !== 'todos') {
+                query += ` AND MONTH(p.created_at) = ?`;
+                valores.push(mes);
+            }
+
+            query += ` ORDER BY p.nombre ASC`;
+
+            const [rows] = await db.query(query, valores);
+            const granTotal = rows.reduce((acc, item) => acc + parseFloat(item['VALOR TOTAL'] || 0), 0);
+
+            res.json({ detalles: rows, sumatoriaTotal: granTotal });
+        } catch (error) {
+            console.error("Error en informe:", error);
+            res.status(500).json({ error: 'Error al generar el informe' });
         }
-
-        // Filtro por Categoría
-        if (categoria && categoria !== 'todas') {
-            query += ` AND p.categoria_id = ?`;
-            valores.push(categoria);
-        }
-
-        // Filtro por Mes (basado en la fecha de creación del producto)
-        if (mes && mes !== 'todos') {
-            query += ` AND MONTH(p.created_at) = ?`;
-            valores.push(mes);
-        }
-
-        query += ` ORDER BY p.nombre ASC`;
-
-        const [rows] = await db.query(query, valores);
-        const granTotal = rows.reduce((acc, item) => acc + parseFloat(item['VALOR TOTAL'] || 0), 0);
-
-        res.json({ detalles: rows, sumatoriaTotal: granTotal });
-    } catch (error) {
-        console.error("Error en informe:", error);
-        res.status(500).json({ error: 'Error al generar el informe' });
-    }
-},
+    },
 
     getStockMinimo: async (req, res) => {
         try {

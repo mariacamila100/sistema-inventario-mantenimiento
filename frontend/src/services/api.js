@@ -39,6 +39,8 @@ api.interceptors.response.use(
   }
 );
 
+// ... (tus interceptores y configuración de axios se mantienen igual)
+
 // --- SERVICIOS DE API ---
 export const authAPI = {
   login: (credentials) => api.post('/auth/login', credentials),
@@ -58,11 +60,12 @@ export const movimientosAPI = {
   create: (data) => api.post('/movimientos', data),
 };
 
-export const categoriasAPI = {
-  getAll: () => api.get('/categorias'),
-  create: (data) => api.post('/categorias', data),
-  update: (id, data) => api.put(`/categorias/${id}`, data),
-  delete: (id) => api.delete(`/categorias/${id}`),
+// CAMBIO AQUÍ: De categoriasAPI a bodegasAPI
+export const bodegasAPI = {
+  getAll: () => api.get('/bodegas'),
+  create: (data) => api.post('/bodegas', data),
+  update: (id, data) => api.put(`/bodegas/${id}`, data),
+  delete: (id) => api.delete(`/bodegas/${id}`),
 };
 
 export const proveedoresAPI = {

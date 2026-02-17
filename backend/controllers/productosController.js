@@ -5,16 +5,12 @@ const normalizarPrecio = (valor) => {
     if (typeof valor === 'number') return valor;
     
     let str = String(valor).trim();
-
-    // Si el string contiene una coma, asumimos formato "1.234,56"
     if (str.includes(',')) {
         str = str.replace(/\./g, '').replace(',', '.');
     } 
-    // Si no tiene comas pero tiene más de un punto (ej: 15.000.000)
     else if ((str.match(/\./g) || []).length > 1) {
         str = str.replace(/\./g, '');
     }
-
     const resultado = parseFloat(str) || 0;
     return resultado;
 };
@@ -24,7 +20,7 @@ exports.getProductos = async (req, res) => {
     const query = `
         SELECT 
             p.*,
-            c.nombre as categoria,
+            b.nombre as bodega, -- Cambiado de categoria a bodega
             pr.nombre as proveedor,
             m.nombre as marca,
             (p.stock_actual * p.precio_unitario) as valor_total,
@@ -33,7 +29,7 @@ exports.getProductos = async (req, res) => {
                 ELSE 'OK'
             END as alerta_stock
         FROM productos p
-        LEFT JOIN categorias c ON p.categoria_id = c.id
+        LEFT JOIN bodegas b ON p.bodega_id = b.id -- Join con bodegas
         LEFT JOIN proveedores pr ON p.proveedor_id = pr.id
         LEFT JOIN marcas m ON p.marca_id = m.id
         WHERE p.estado = 'activo'
@@ -65,7 +61,7 @@ exports.getProductoById = async (req, res) => {
 // Crear nuevo producto
 exports.createProducto = async (req, res) => {
     const { 
-        codigo, nombre, descripcion, categoria_id, 
+        codigo, nombre, descripcion, bodega_id, // Cambiado de categoria_id
         proveedor_id, marca_id, stock_actual, 
         stock_minimo, precio_unitario, ubicacion 
     } = req.body;
@@ -75,13 +71,12 @@ exports.createProducto = async (req, res) => {
     
     try {
         await connection.beginTransaction();
-
         const userId = req.user?.id || 1; 
         await connection.query('SET @usuario_id = ?', [userId]);
 
         const queryInsert = `
             INSERT INTO productos (
-                codigo, nombre, descripcion, categoria_id, 
+                codigo, nombre, descripcion, bodega_id, 
                 proveedor_id, marca_id, stock_actual, 
                 stock_minimo, precio_unitario, ubicacion
             )
@@ -89,7 +84,7 @@ exports.createProducto = async (req, res) => {
         `;
         
         const [result] = await connection.query(queryInsert, [
-            codigo, nombre, descripcion, categoria_id, 
+            codigo, nombre, descripcion, bodega_id, // Usando bodega_id
             proveedor_id, marca_id, stock_actual || 0, 
             stock_minimo, precioFinal, ubicacion
         ]);
@@ -107,7 +102,7 @@ exports.createProducto = async (req, res) => {
 // Actualizar producto
 exports.updateProducto = async (req, res) => {
     const { 
-        nombre, descripcion, categoria_id, 
+        nombre, descripcion, bodega_id, // Cambiado de categoria_id
         proveedor_id, marca_id, stock_minimo, 
         precio_unitario, ubicacion 
     } = req.body;
@@ -117,20 +112,19 @@ exports.updateProducto = async (req, res) => {
 
     try {
         await connection.beginTransaction();
-
         const userId = req.user?.id || 1; 
         await connection.query('SET @usuario_id = ?', [userId]);
 
         const queryUpdate = `
             UPDATE productos 
-            SET nombre = ?, descripcion = ?, categoria_id = ?, 
+            SET nombre = ?, descripcion = ?, bodega_id = ?, 
                 proveedor_id = ?, marca_id = ?, stock_minimo = ?, 
                 precio_unitario = ?, ubicacion = ?
             WHERE id = ?
         `;
         
         const [result] = await connection.query(queryUpdate, [
-            nombre, descripcion, categoria_id, 
+            nombre, descripcion, bodega_id, // Usando bodega_id
             proveedor_id, marca_id, stock_minimo, 
             precioFinal, ubicacion, req.params.id
         ]);
@@ -153,10 +147,8 @@ exports.updateProducto = async (req, res) => {
 // Eliminar producto (Soft Delete)
 exports.deleteProducto = async (req, res) => {
     const connection = await db.getConnection();
-
     try {
         await connection.beginTransaction();
-
         const userId = req.user?.id || 1; 
         await connection.query('SET @usuario_id = ?', [userId]);
 

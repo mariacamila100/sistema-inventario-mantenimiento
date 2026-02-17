@@ -1,9 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useLocation } from 'react-router-dom';
 import api from '../services/api';
 import { 
   FileSpreadsheet, Package, AlertCircle, Users, FileText, 
-  Wind, TrendingUp, History, Search, Filter, CalendarDays 
+  Wind, TrendingUp, History, Search, Filter, CalendarDays, Warehouse 
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { exportToPDF } from '../services/reportGenerator';
@@ -19,13 +19,13 @@ function Informes() {
 
   // Estados para datos de filtros (Opciones de la DB)
   const [marcas, setMarcas] = useState([]);
-  const [categorias, setCategorias] = useState([]);
+  const [bodegas, setBodegas] = useState([]); // Ajustado: categorias -> bodegas
 
   // Estados para valores seleccionados
   const [filtroProducto, setFiltroProducto] = useState('');
   const [filtroTipo, setFiltroTipo] = useState('todos');
   const [filtroMarca, setFiltroMarca] = useState('todas');
-  const [filtroCategoria, setFiltroCategoria] = useState('todas');
+  const [filtroBodega, setFiltroBodega] = useState('todas'); // Ajustado: filtroCategoria -> filtroBodega
   const [filtroMes, setFiltroMes] = useState('todos');
 
   const meses = [
@@ -42,12 +42,12 @@ function Informes() {
 
   const loadFilterOptions = async () => {
     try {
-      const [mRes, cRes] = await Promise.all([
+      const [mRes, bRes] = await Promise.all([
         api.get('/marcas'),
-        api.get('/categorias')
+        api.get('/bodegas') // Llamada ajustada al nuevo endpoint
       ]);
       setMarcas(mRes.data);
-      setCategorias(cRes.data);
+      setBodegas(bRes.data);
     } catch (error) {
       console.error("Error cargando filtros:", error);
     }
@@ -70,9 +70,9 @@ function Informes() {
   const generarReporte = async (tipo) => {
     setTipoReporte(tipo);
     try {
-      // Construcción dinámica de URLs según el tipo y filtros
       const endpoints = {
-        inventario: `/informes/inventario-completo?marca=${filtroMarca}&categoria=${filtroCategoria}&mes=${filtroMes}`,
+        // Endpoint actualizado con parámetro bodega
+        inventario: `/informes/inventario-completo?marca=${filtroMarca}&bodega=${filtroBodega}&mes=${filtroMes}`,
         critico: '/informes/stock-critico',
         proveedores: '/informes/proveedores',
         kardex: `/informes/kardex?producto=${filtroProducto}&tipo=${filtroTipo}`
@@ -198,16 +198,16 @@ function Informes() {
                     </select>
                   </div>
 
-                  {/* Select Categoría */}
+                  {/* Select Bodega */}
                   <div className="relative">
-                    <Filter className="w-3 h-3 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                    <Warehouse className="w-3 h-3 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                     <select 
                       className="pl-8 pr-8 py-2 bg-slate-50 border-none rounded-xl text-[10px] font-bold text-slate-600 outline-none appearance-none cursor-pointer hover:bg-slate-100 transition-colors"
-                      value={filtroCategoria}
-                      onChange={(e) => setFiltroCategoria(e.target.value)}
+                      value={filtroBodega}
+                      onChange={(e) => setFiltroBodega(e.target.value)}
                     >
-                      <option value="todas">TODAS LAS CATEGORÍAS</option>
-                      {categorias.map(c => <option key={c.id} value={c.id}>{c.nombre.toUpperCase()}</option>)}
+                      <option value="todas">TODAS LAS BODEGAS</option>
+                      {bodegas.map(b => <option key={b.id} value={b.id}>{b.nombre.toUpperCase()}</option>)}
                     </select>
                   </div>
 

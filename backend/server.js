@@ -24,7 +24,7 @@ app.use(express.json());
 // Nota: Asegúrate de que los archivos existan en la carpeta ./routes/
 app.use('/api/productos', require('./routes/productos'));
 app.use('/api/movimientos', require('./routes/movimientos'));
-app.use('/api/categorias', require('./routes/categorias'));
+app.use('/api/bodegas', require('./routes/bodegas'));
 app.use('/api/proveedores', require('./routes/proveedores'));
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/marcas', require('./routes/marcas'));

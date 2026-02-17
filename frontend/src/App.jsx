@@ -4,7 +4,7 @@ import Navbar from './components/navbar';
 import Home from './pages/Home';
 import Productos from './pages/Productos';
 import Movimientos from './pages/Movimientos';
-import Categorias from './pages/Categorias';
+import Categorias from './pages/Bodegas';
 import Proveedores from './pages/Proveedores';
 import Login from './pages/Login';
 import Registro from './pages/Registro';
@@ -83,7 +83,7 @@ function App() {
             <Route path="/" element={<ProtectedRoute><Home /></ProtectedRoute>} />
             <Route path="/productos" element={<ProtectedRoute><Productos /></ProtectedRoute>} />
             <Route path="/movimientos" element={<ProtectedRoute><Movimientos /></ProtectedRoute>} />
-            <Route path="/categorias" element={<ProtectedRoute><Categorias /></ProtectedRoute>} />
+            <Route path="/bodegas" element={<ProtectedRoute><Categorias /></ProtectedRoute>} />
             <Route path="/proveedores" element={<ProtectedRoute><Proveedores /></ProtectedRoute>} />
             <Route path="/marcas" element={<ProtectedRoute><Marcas /></ProtectedRoute>} />
             <Route path="/informes" element={<ProtectedRoute><Informes /></ProtectedRoute>} />

@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router-dom';
-import { Package, History, Home, Menu, X, LogOut, Wind, LayoutDashboard, Boxes, ClipboardList, Truck, FileText } from 'lucide-react'; 
+import { Package, History, Home, Menu, X, LogOut, Wind, LayoutDashboard, Boxes, ClipboardList, Truck, FileText, Warehouse } from 'lucide-react'; 
 import { useState } from 'react';
 
 function Navbar({ onLogout, userName }) {
@@ -16,7 +16,7 @@ function Navbar({ onLogout, userName }) {
     { path: '/', icon: LayoutDashboard, label: 'Inicio' },
     { path: '/productos', icon: Boxes, label: 'Productos' },
     { path: '/movimientos', icon: History, label: 'Movimientos' },
-    { path: '/categorias', icon: ClipboardList, label: 'Categorías' },
+    { path: '/bodegas', icon: Warehouse, label: 'Bodegas' },
      { path: '/marcas', icon: Package, label: 'Marcas'},
     { path: '/proveedores', icon: Truck, label: 'Proveedores' },
     { path: '/informes', icon: FileText, label: 'Informes' },
