@@ -64,19 +64,22 @@ function Categorias() {
   const [confirmData, setConfirmData] = useState({ isOpen: false, id: null });
   const [formData, setFormData] = useState({ nombre: '', descripcion: '' });
 
-  const loadCategorias = useCallback(async () => {
-    setLoading(true);
+  // OPTIMIZACIÓN: Carga ultra-rápida sin retardos artificiales
+  const loadCategorias = useCallback(async (isFirstLoad = false) => {
+    if (isFirstLoad) setLoading(true);
     try {
       const response = await categoriasAPI.getAll();
       setCategorias(response.data);
     } catch (error) {
       setNotification({ message: 'Error al conectar con las categorías', type: 'error' });
     } finally {
-      setTimeout(() => setLoading(false), 500);
+      setLoading(false); // Se quita el setTimeout para que sea instantáneo
     }
   }, []);
 
-  useEffect(() => { loadCategorias(); }, [loadCategorias]);
+  useEffect(() => { 
+    loadCategorias(true); 
+  }, [loadCategorias]);
 
   const filtered = categorias.filter(c =>
     c.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -98,7 +101,7 @@ function Categorias() {
         await categoriasAPI.create(formData);
         setNotification({ message: 'Categoría creada con éxito', type: 'success' });
       }
-      loadCategorias();
+      loadCategorias(); // Recarga en segundo plano para no interrumpir
       closeModal();
     } catch (error) {
       setNotification({ message: 'Error al procesar la categoría', type: 'error' });
@@ -178,8 +181,6 @@ function Categorias() {
               {currentItems.length > 0 ? (
                 currentItems.map((cat) => (
                   <tr key={cat.id} className="hover:bg-slate-50/50 transition-colors flex flex-col md:table-row p-6 md:p-0">
-
-                    {/* Nombre - Etiqueta a la izquierda en móvil */}
                     <td className="px-0 md:px-8 py-2 md:py-5 block md:table-cell">
                       <div className="flex items-center justify-between md:justify-start gap-4">
                         <span className="text-[10px] font-black text-slate-300 uppercase tracking-widest md:hidden">Nombre</span>
@@ -194,7 +195,6 @@ function Categorias() {
                       </div>
                     </td>
 
-                    {/* Descripción - Etiqueta a la izquierda en móvil */}
                     <td className="px-0 md:px-8 py-2 md:py-5 block md:table-cell border-t border-slate-50 md:border-none mt-1 md:mt-0 pt-3 md:pt-5">
                       <div className="flex justify-between md:block gap-4">
                         <span className="text-[10px] font-black text-slate-300 uppercase tracking-widest md:hidden mt-0.5">Descripción</span>
@@ -204,7 +204,6 @@ function Categorias() {
                       </div>
                     </td>
 
-                    {/* Acciones - Etiqueta a la izquierda en móvil */}
                     <td className="px-0 md:px-8 py-2 md:py-5 block md:table-cell border-t border-slate-50 md:border-none mt-1 md:mt-0 pt-3 md:pt-5">
                       <div className="flex items-center justify-between md:justify-end gap-2">
                         <span className="text-[10px] font-black text-slate-300 uppercase tracking-widest md:hidden">Acciones</span>
@@ -232,18 +231,13 @@ function Categorias() {
             </tbody>
           </table>
         </div>
-        {/* Paginación Minimalista y Limpia */}
+
         {!loading && filtered.length > 0 && (
           <div className="p-6 bg-slate-50/50 border-t border-slate-100 flex flex-col sm:flex-row justify-between items-center gap-4">
-
-            {/* Contador de registros (Mantiene tu texto original) */}
             <p className="text-sm text-slate-500 font-medium">
-              Mostrando <span className="text-slate-900 font-bold">{indexOfFirstItem + 1}</span> a <span className="text-slate-900 font-bold">{Math.min(indexOfLastItem, filtered.length)}</span> de {filtered.length} movimientos
+              Mostrando <span className="text-slate-900 font-bold">{indexOfFirstItem + 1}</span> a <span className="text-slate-900 font-bold">{Math.min(indexOfLastItem, filtered.length)}</span> de {filtered.length} categorías
             </p>
-
-            {/* Controles de navegación compactos */}
             <div className="flex items-center gap-3">
-              {/* Flecha Anterior */}
               <button
                 disabled={currentPage === 1}
                 onClick={() => setCurrentPage(prev => prev - 1)}
@@ -251,8 +245,6 @@ function Categorias() {
               >
                 <ChevronLeft className="w-5 h-5 text-slate-600" />
               </button>
-
-              {/* Cuadrito de Número Actual y Total */}
               <div className="flex items-center gap-3 px-1">
                 <div className="w-10 h-10 rounded-xl bg-[#003366] text-white flex items-center justify-center font-bold text-sm shadow-lg shadow-blue-900/20">
                   {currentPage}
@@ -260,8 +252,6 @@ function Categorias() {
                 <span className="text-slate-300 font-light text-xl">/</span>
                 <span className="text-sm font-bold text-slate-500">{totalPages}</span>
               </div>
-
-              {/* Flecha Siguiente */}
               <button
                 disabled={currentPage === totalPages}
                 onClick={() => setCurrentPage(prev => prev + 1)}

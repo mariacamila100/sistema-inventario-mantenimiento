@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { productosAPI, categoriasAPI, proveedoresAPI, marcasAPI } from '../services/api';
 import {
   Plus, Edit, Trash2, Search, Package, Tag,
@@ -6,7 +6,6 @@ import {
   ChevronLeft, ChevronRight, AlertTriangle, MapPin,
   Copyright
 } from 'lucide-react';
-
 
 // --- COMPONENTE DE NOTIFICACIÓN ---
 const Notification = ({ message, type, onClose }) => {
@@ -68,7 +67,7 @@ function Productos() {
   const [confirmDelete, setConfirmDelete] = useState({ show: false, id: null });
 
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage] = useState(5);
+  const [itemsPerPage] = useState(5); 
 
   const [formData, setFormData] = useState({
     codigo: '', nombre: '', descripcion: '', categoria_id: '',
@@ -77,7 +76,7 @@ function Productos() {
   });
 
   const loadData = useCallback(async () => {
-    setLoading(true);
+    if (productos.length === 0) setLoading(true);
     try {
       const [resProd, resCat, resProv, resMarc] = await Promise.all([
         productosAPI.getAll(),
@@ -92,23 +91,111 @@ function Productos() {
     } catch (error) {
       setNotification({ message: 'Error al cargar los datos', type: 'error' });
     } finally {
-      setTimeout(() => setLoading(false), 500);
+      setLoading(false);
     }
-  }, []);
+  }, [productos.length]);
 
   useEffect(() => {
     loadData();
   }, [loadData]);
 
-  const filtered = productos.filter(p =>
-    p.nombre?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    p.codigo?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  // --- OPTIMIZACIÓN: Filtrado memorizado ---
+  const filtered = useMemo(() => {
+    return productos.filter(p =>
+      p.nombre?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      p.codigo?.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+  }, [productos, searchTerm]);
 
   const totalPages = Math.ceil(filtered.length / itemsPerPage);
   const indexOfLastItem = currentPage * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
   const currentItems = filtered.slice(indexOfFirstItem, indexOfLastItem);
+
+  // --- OPTIMIZACIÓN: Filas de tabla memorizadas ---
+  const rowsRendered = useMemo(() => {
+    return currentItems.map((p) => (
+      <tr key={p.id} className="hover:bg-slate-50 transition-colors flex flex-col lg:table-row p-4 sm:p-6 lg:p-0 border-b lg:border-none">
+        {/* Producto */}
+        <td className="lg:px-8 lg:py-5 py-2">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-slate-100 rounded-xl text-[#003366] shrink-0">
+              <Package className="w-5 h-5" />
+            </div>
+            <div className="min-w-0">
+              <p className="font-bold text-slate-800 uppercase text-sm tracking-tight truncate">{p.nombre}</p>
+              <p className="text-[10px] text-slate-400 font-mono font-bold tracking-wider">{p.codigo}</p>
+            </div>
+          </div>
+        </td>
+
+        {/* Categoría / Marca */}
+        <td className="lg:px-8 lg:py-5 py-2">
+          <div className="flex flex-row lg:flex-col items-center lg:items-start justify-between lg:justify-center gap-1">
+            <span className="text-[10px] font-black text-slate-300 uppercase tracking-widest lg:hidden">Detalles</span>
+            <div className="flex flex-col lg:gap-1 text-right lg:text-left">
+              <span className="flex items-center lg:justify-start justify-end gap-1.5 text-slate-600 font-medium text-xs">
+                <Tag className="w-3 h-3 text-[#003366]/60 hidden lg:block" /> {p.categoria || 'S/C'}
+              </span>
+              <span className="flex items-center lg:justify-start justify-end gap-1.5 text-slate-400 font-medium text-[10px]">
+                <Copyright className="w-3 h-3 text-slate-300 hidden lg:block" /> {p.marca || 'Genérico'}
+              </span>
+            </div>
+          </div>
+        </td>
+
+        {/* Stock */}
+        <td className="lg:px-8 lg:py-5 py-2">
+          <div className="flex items-center justify-between lg:justify-center">
+            <span className="text-[10px] font-black text-slate-300 uppercase tracking-widest lg:hidden">Stock</span>
+            <div className={`px-3 py-1 rounded-full font-bold text-sm ${Number(p.stock_actual) <= Number(p.stock_minimo) ? 'bg-red-50 text-red-600 border border-red-100' : 'bg-emerald-50 text-emerald-600 border border-emerald-100'}`}>
+              {p.stock_actual} <span className="text-[10px] opacity-60 ml-1">min: {p.stock_minimo}</span>
+            </div>
+          </div>
+        </td>
+
+        {/* Precio */}
+        <td className="lg:px-8 lg:py-5 py-2">
+          <div className="flex flex-row lg:flex-col items-center lg:items-start justify-between lg:justify-center">
+            <span className="text-[10px] font-black text-slate-300 uppercase tracking-widest lg:hidden">Precio</span>
+            <div className="text-right lg:text-left">
+              <p className="font-bold text-slate-700 text-sm">
+                ${Number(p.precio_unitario).toLocaleString('es-CO')}
+              </p>
+              <p className="text-[10px] text-slate-400 font-normal uppercase hidden lg:block">
+                Total: ${(Number(p.stock_actual) * Number(p.precio_unitario)).toLocaleString('es-CO')}
+              </p>
+            </div>
+          </div>
+        </td>
+
+        {/* Acciones */}
+        <td className="lg:px-8 lg:py-5 py-4 lg:py-5 mt-2 lg:mt-0 border-t lg:border-none border-slate-50">
+          <div className="flex justify-between lg:justify-end items-center gap-2">
+            <span className="text-[10px] font-black text-slate-300 uppercase tracking-widest lg:hidden">Opciones</span>
+            <div className="flex gap-1">
+              <button onClick={() => {
+                setEditingProduct(p);
+                setFormData({
+                  ...p,
+                  precio_unitario: p.precio_unitario.toString(),
+                  categoria_id: p.categoria_id || '',
+                  proveedor_id: p.proveedor_id || '',
+                  marca_id: p.marca_id || ''
+                });
+                setShowModal(true);
+              }} className="p-2 text-[#003366] hover:bg-slate-100 rounded-xl transition-all">
+                <Edit className="w-5 h-5" />
+              </button>
+              <button onClick={() => setConfirmDelete({ show: true, id: p.id })} className="p-2 text-red-500 hover:bg-red-50 rounded-xl transition-all">
+                <Trash2 className="w-5 h-5" />
+              </button>
+            </div>
+          </div>
+        </td>
+      </tr>
+    ));
+  }, [currentItems]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -162,7 +249,6 @@ function Productos() {
 
   return (
     <div className="w-full max-w-7xl mx-auto p-4 md:p-6 lg:p-8 space-y-6">
-
       <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mt-4">
         <div>
           <h1 className="text-3xl md:text-4xl font-black text-slate-900 tracking-tight">Productos</h1>
@@ -207,94 +293,13 @@ function Productos() {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {currentItems.length > 0 ? (
-                currentItems.map((p) => (
-                  <tr key={p.id} className="hover:bg-slate-50 transition-colors flex flex-col lg:table-row p-4 sm:p-6 lg:p-0 border-b lg:border-none">
-
-                    {/* Producto */}
-                    <td className="lg:px-8 lg:py-5 py-2">
-                      <div className="flex items-center gap-3">
-                        <div className="p-2 bg-slate-100 rounded-xl text-[#003366] shrink-0">
-                          <Package className="w-5 h-5" />
-                        </div>
-                        <div className="min-w-0">
-                          <p className="font-bold text-slate-800 uppercase text-sm tracking-tight truncate">{p.nombre}</p>
-                          <p className="text-[10px] text-slate-400 font-mono font-bold tracking-wider">{p.codigo}</p>
-                        </div>
-                      </div>
-                    </td>
-
-                    {/* Categoría / Marca */}
-                    <td className="lg:px-8 lg:py-5 py-2">
-                      <div className="flex flex-row lg:flex-col items-center lg:items-start justify-between lg:justify-center gap-1">
-                        <span className="text-[10px] font-black text-slate-300 uppercase tracking-widest lg:hidden">Detalles</span>
-                        <div className="flex flex-col lg:gap-1 text-right lg:text-left">
-                          <span className="flex items-center lg:justify-start justify-end gap-1.5 text-slate-600 font-medium text-xs">
-                            <Tag className="w-3 h-3 text-[#003366]/60 hidden lg:block" /> {p.categoria || 'S/C'}
-                          </span>
-                          <span className="flex items-center lg:justify-start justify-end gap-1.5 text-slate-400 font-medium text-[10px]">
-                            <Copyright className="w-3 h-3 text-slate-300 hidden lg:block" /> {p.marca || 'Genérico'}
-                          </span>
-                        </div>
-                      </div>
-                    </td>
-
-                    {/* Stock */}
-                    <td className="lg:px-8 lg:py-5 py-2">
-                      <div className="flex items-center justify-between lg:justify-center">
-                        <span className="text-[10px] font-black text-slate-300 uppercase tracking-widest lg:hidden">Stock</span>
-                        <div className={`px-3 py-1 rounded-full font-bold text-sm ${Number(p.stock_actual) <= Number(p.stock_minimo) ? 'bg-red-50 text-red-600 border border-red-100' : 'bg-emerald-50 text-emerald-600 border border-emerald-100'}`}>
-                          {p.stock_actual} <span className="text-[10px] opacity-60 ml-1">min: {p.stock_minimo}</span>
-                        </div>
-                      </div>
-                    </td>
-
-                    {/* Precio */}
-                    <td className="lg:px-8 lg:py-5 py-2">
-                      <div className="flex flex-row lg:flex-col items-center lg:items-start justify-between lg:justify-center">
-                        <span className="text-[10px] font-black text-slate-300 uppercase tracking-widest lg:hidden">Precio</span>
-                        <div className="text-right lg:text-left">
-                          <p className="font-bold text-slate-700 text-sm">
-                            ${Number(p.precio_unitario).toLocaleString('es-CO')}
-                          </p>
-                          <p className="text-[10px] text-slate-400 font-normal uppercase hidden lg:block">
-                            Total: ${(Number(p.stock_actual) * Number(p.precio_unitario)).toLocaleString('es-CO')}
-                          </p>
-                        </div>
-                      </div>
-                    </td>
-
-                    {/* Acciones */}
-                    <td className="lg:px-8 lg:py-5 py-4 lg:py-5 mt-2 lg:mt-0 border-t lg:border-none border-slate-50">
-                      <div className="flex justify-between lg:justify-end items-center gap-2">
-                        <span className="text-[10px] font-black text-slate-300 uppercase tracking-widest lg:hidden">Opciones</span>
-                        <div className="flex gap-1">
-                          <button onClick={() => {
-                            setEditingProduct(p);
-                            setFormData({
-                              ...p,
-                              precio_unitario: p.precio_unitario.toString(),
-                              categoria_id: p.categoria_id || '',
-                              proveedor_id: p.proveedor_id || '',
-                              marca_id: p.marca_id || ''
-                            });
-                            setShowModal(true);
-                          }} className="p-2 text-[#003366] hover:bg-slate-100 rounded-xl transition-all">
-                            <Edit className="w-5 h-5" />
-                          </button>
-                          <button onClick={() => setConfirmDelete({ show: true, id: p.id })} className="p-2 text-red-500 hover:bg-red-50 rounded-xl transition-all">
-                            <Trash2 className="w-5 h-5" />
-                          </button>
-                        </div>
-                      </div>
-                    </td>
-                  </tr>
-                ))
+              {filtered.length > 0 ? (
+                rowsRendered
               ) : (
                 !loading && (
                   <tr>
                     <td colSpan="5" className="px-8 py-20 text-center text-slate-400 font-medium">
-                      No se encontraron productos.
+                      No se encontraron productos que coincidan con la búsqueda.
                     </td>
                   </tr>
                 )
@@ -302,18 +307,15 @@ function Productos() {
             </tbody>
           </table>
         </div>
-        {/* Paginación Minimalista y Limpia */}
+
+        {/* Paginación */}
         {!loading && filtered.length > 0 && (
           <div className="p-4 bg-slate-50/50 border-t border-slate-100 flex flex-col sm:flex-row justify-between items-center gap-4">
-
-            {/* Contador de registros (Mantiene tu texto original) */}
             <p className="text-sm text-slate-500 font-medium">
-              Mostrando <span className="text-slate-900 font-bold">{indexOfFirstItem + 1}</span> a <span className="text-slate-900 font-bold">{Math.min(indexOfLastItem, filtered.length)}</span> de {filtered.length} movimientos
+              Mostrando <span className="text-slate-900 font-bold">{indexOfFirstItem + 1}</span> a <span className="text-slate-900 font-bold">{Math.min(indexOfLastItem, filtered.length)}</span> de {filtered.length} productos
             </p>
 
-            {/* Controles de navegación compactos */}
             <div className="flex items-center gap-3">
-              {/* Flecha Anterior */}
               <button
                 disabled={currentPage === 1}
                 onClick={() => setCurrentPage(prev => prev - 1)}
@@ -322,7 +324,6 @@ function Productos() {
                 <ChevronLeft className="w-5 h-5 text-slate-600" />
               </button>
 
-              {/* Cuadrito de Número Actual y Total */}
               <div className="flex items-center gap-3 px-1">
                 <div className="w-10 h-10 rounded-xl bg-[#003366] text-white flex items-center justify-center font-bold text-sm shadow-lg shadow-blue-900/20">
                   {currentPage}
@@ -331,7 +332,6 @@ function Productos() {
                 <span className="text-sm font-bold text-slate-500">{totalPages}</span>
               </div>
 
-              {/* Flecha Siguiente */}
               <button
                 disabled={currentPage === totalPages}
                 onClick={() => setCurrentPage(prev => prev + 1)}
@@ -344,103 +344,93 @@ function Productos() {
         )}
       </div>
 
-    {showModal && (
-  <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center z-[120] p-2">
-    {/* Reducimos el padding general de p-8 a p-6 para ganar espacio vertical */}
-    <div className="bg-white rounded-[2rem] sm:rounded-[2.5rem] p-6 sm:p-7 w-full max-w-2xl shadow-2xl animate-in zoom-in duration-200 border-4 border-white overflow-hidden">
-      
-      <div className="flex justify-between items-center mb-4">
-        <h2 className="text-xl sm:text-2xl font-black text-slate-900 uppercase tracking-tight">
-          {editingProduct ? 'Editar Producto' : 'Nuevo Producto'}
-        </h2>
-        <button onClick={closeModal} className="p-2 bg-slate-50 rounded-full text-slate-400 hover:text-red-500 transition-colors">
-          <X className="w-5 h-5" />
-        </button>
-      </div>
-
-      <form onSubmit={handleSubmit} className="space-y-3">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-2.5">
-          
-          {/* Código y Nombre */}
-          <div className="space-y-1">
-            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider ml-1">Código *</label>
-            <input required type="text" disabled={!!editingProduct} value={formData.codigo} onChange={(e) => setFormData({ ...formData, codigo: e.target.value })} className="w-full px-4 py-2 rounded-xl border border-slate-200 outline-none focus:ring-4 focus:ring-[#003366]/5 disabled:bg-slate-50 uppercase font-mono text-xs" />
-          </div>
-
-          <div className="space-y-1">
-            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider ml-1">Nombre *</label>
-            <input required type="text" value={formData.nombre} onChange={(e) => setFormData({ ...formData, nombre: e.target.value })} className="w-full px-4 py-2 rounded-xl border border-slate-200 outline-none focus:ring-4 focus:ring-[#003366]/5 text-xs font-bold" />
-          </div>
-
-          {/* Categoría y Marca */}
-          <div className="space-y-1">
-            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider ml-1">Categoría *</label>
-            <select required value={formData.categoria_id} onChange={(e) => setFormData({ ...formData, categoria_id: e.target.value })} className="w-full px-4 py-2 rounded-xl border border-slate-200 bg-white text-xs font-medium">
-              <option value="">Seleccionar...</option>
-              {categorias.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
-            </select>
-          </div>
-
-          <div className="space-y-1">
-            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider ml-1">Marca *</label>
-            <select required value={formData.marca_id} onChange={(e) => setFormData({ ...formData, marca_id: e.target.value })} className="w-full px-4 py-2 rounded-xl border border-slate-200 bg-white text-xs font-medium">
-              <option value="">Seleccionar...</option>
-              {marcas.map(m => <option key={m.id} value={m.id}>{m.nombre}</option>)}
-            </select>
-          </div>
-
-          {/* Proveedor y Stock Actual */}
-          <div className="space-y-1">
-            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider ml-1">Proveedor *</label>
-            <select required value={formData.proveedor_id} onChange={(e) => setFormData({ ...formData, proveedor_id: e.target.value })} className="w-full px-4 py-2 rounded-xl border border-slate-200 bg-white text-xs font-medium">
-              <option value="">Seleccionar...</option>
-              {proveedores.map(p => <option key={p.id} value={p.id}>{p.nombre}</option>)}
-            </select>
-          </div>
-
-          <div className="space-y-1">
-            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider ml-1">Stock Actual</label>
-            <input type="number" disabled={!!editingProduct} value={formData.stock_actual} onChange={(e) => setFormData({ ...formData, stock_actual: e.target.value })} className="w-full px-4 py-2 rounded-xl border border-slate-200 outline-none text-xs font-bold" />
-          </div>
-
-          {/* Stock Mínimo y Precio */}
-          <div className="space-y-1">
-            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider ml-1">Stock Mínimo</label>
-            <input type="number" value={formData.stock_minimo} onChange={(e) => setFormData({ ...formData, stock_minimo: e.target.value })} className="w-full px-4 py-2 rounded-xl border border-slate-200 outline-none text-xs font-bold" />
-          </div>
-
-          <div className="space-y-1">
-            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider ml-1">Precio Unitario ($)</label>
-            <input type="text" value={formData.precio_unitario} onChange={(e) => setFormData({ ...formData, precio_unitario: e.target.value.replace(/[^0-9.,]/g, '') })} className="w-full px-4 py-2 rounded-xl border border-slate-200 outline-none font-bold text-[#003366] text-xs" />
-          </div>
-
-          {/* ÚLTIMA FILA COMPARTIDA: Ubicación y Descripción */}
-          <div className="space-y-1">
-            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider ml-1">Ubicación Almacén</label>
-            <div className="relative">
-              <MapPin className="absolute left-3 top-2 w-3.5 h-3.5 text-slate-400" />
-              <input type="text" value={formData.ubicacion} onChange={(e) => setFormData({ ...formData, ubicacion: e.target.value })} className="w-full pl-9 pr-4 py-2 rounded-xl border border-slate-200 text-xs font-medium" />
+      {showModal && (
+        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center z-[120] p-2">
+          <div className="bg-white rounded-[2rem] sm:rounded-[2.5rem] p-6 sm:p-7 w-full max-w-2xl shadow-2xl animate-in zoom-in duration-200 border-4 border-white overflow-hidden">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl sm:text-2xl font-black text-slate-900 uppercase tracking-tight">
+                {editingProduct ? 'Editar Producto' : 'Nuevo Producto'}
+              </h2>
+              <button onClick={closeModal} className="p-2 bg-slate-50 rounded-full text-slate-400 hover:text-red-500 transition-colors">
+                <X className="w-5 h-5" />
+              </button>
             </div>
-          </div>
 
-          <div className="space-y-1">
-            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider ml-1">Descripción del Ítem</label>
-            <input type="text" value={formData.descripcion} onChange={(e) => setFormData({ ...formData, descripcion: e.target.value })} placeholder="Breve detalle..." className="w-full px-4 py-2 rounded-xl border border-slate-200 outline-none text-xs font-medium" />
+            <form onSubmit={handleSubmit} className="space-y-3">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-2.5">
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider ml-1">Código *</label>
+                  <input required type="text" disabled={!!editingProduct} value={formData.codigo} onChange={(e) => setFormData({ ...formData, codigo: e.target.value })} className="w-full px-4 py-2 rounded-xl border border-slate-200 outline-none focus:ring-4 focus:ring-[#003366]/5 disabled:bg-slate-50 uppercase font-mono text-xs" />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider ml-1">Nombre *</label>
+                  <input required type="text" value={formData.nombre} onChange={(e) => setFormData({ ...formData, nombre: e.target.value })} className="w-full px-4 py-2 rounded-xl border border-slate-200 outline-none focus:ring-4 focus:ring-[#003366]/5 text-xs font-bold" />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider ml-1">Categoría *</label>
+                  <select required value={formData.categoria_id} onChange={(e) => setFormData({ ...formData, categoria_id: e.target.value })} className="w-full px-4 py-2 rounded-xl border border-slate-200 bg-white text-xs font-medium">
+                    <option value="">Seleccionar...</option>
+                    {categorias.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
+                  </select>
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider ml-1">Marca *</label>
+                  <select required value={formData.marca_id} onChange={(e) => setFormData({ ...formData, marca_id: e.target.value })} className="w-full px-4 py-2 rounded-xl border border-slate-200 bg-white text-xs font-medium">
+                    <option value="">Seleccionar...</option>
+                    {marcas.map(m => <option key={m.id} value={m.id}>{m.nombre}</option>)}
+                  </select>
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider ml-1">Proveedor *</label>
+                  <select required value={formData.proveedor_id} onChange={(e) => setFormData({ ...formData, proveedor_id: e.target.value })} className="w-full px-4 py-2 rounded-xl border border-slate-200 bg-white text-xs font-medium">
+                    <option value="">Seleccionar...</option>
+                    {proveedores.map(p => <option key={p.id} value={p.id}>{p.nombre}</option>)}
+                  </select>
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider ml-1">Stock Actual</label>
+                  <input type="number" disabled={!!editingProduct} value={formData.stock_actual} onChange={(e) => setFormData({ ...formData, stock_actual: e.target.value })} className="w-full px-4 py-2 rounded-xl border border-slate-200 outline-none text-xs font-bold" />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider ml-1">Stock Mínimo</label>
+                  <input type="number" value={formData.stock_minimo} onChange={(e) => setFormData({ ...formData, stock_minimo: e.target.value })} className="w-full px-4 py-2 rounded-xl border border-slate-200 outline-none text-xs font-bold" />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider ml-1">Precio Unitario ($)</label>
+                  <input type="text" value={formData.precio_unitario} onChange={(e) => setFormData({ ...formData, precio_unitario: e.target.value.replace(/[^0-9.]/g, '') })} className="w-full px-4 py-2 rounded-xl border border-slate-200 outline-none font-bold text-[#003366] text-xs" />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider ml-1">Ubicación Almacén</label>
+                  <div className="relative">
+                    <MapPin className="absolute left-3 top-2 w-3.5 h-3.5 text-slate-400" />
+                    <input type="text" value={formData.ubicacion} onChange={(e) => setFormData({ ...formData, ubicacion: e.target.value })} className="w-full pl-9 pr-4 py-2 rounded-xl border border-slate-200 text-xs font-medium" />
+                  </div>
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider ml-1">Descripción del Ítem</label>
+                  <input type="text" value={formData.descripcion} onChange={(e) => setFormData({ ...formData, descripcion: e.target.value })} placeholder="Breve detalle..." className="w-full px-4 py-2 rounded-xl border border-slate-200 outline-none text-xs font-medium" />
+                </div>
+              </div>
+
+              <div className="flex justify-center pt-2">
+                <button type="submit" className="w-full sm:w-1/3 py-3 bg-[#003366] text-white font-black rounded-2xl hover:bg-[#001a33] shadow-lg shadow-blue-900/20 transition-all uppercase tracking-widest text-xs">
+                  {editingProduct ? 'Guardar Cambios' : 'Registrar Producto'}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
+      )}
 
-        {/* Botón más compacto y centrado */}
-        <div className="flex justify-center pt-2">
-          <button type="submit" className="w-full sm:w-1/3 py-3 bg-[#003366] text-white font-black rounded-2xl hover:bg-[#001a33] shadow-lg shadow-blue-900/20 transition-all uppercase tracking-widest text-xs">
-            {editingProduct ? 'Guardar Cambios' : 'Registrar Producto'}
-          </button>
-        </div>
-      </form>
-    </div>
-  </div>
-)}
-
-      {/* DIÁLOGO DE CONFIRMACIÓN INTEGRADO */}
       <ConfirmDialog
         isOpen={confirmDelete.show}
         title="¿Desactivar Producto?"

@@ -6,19 +6,19 @@ import {
   ChevronLeft, ChevronRight, Mail, MapPin, AlertTriangle
 } from 'lucide-react';
 
-// --- COMPONENTE CONFIRM DIALOG COMPACTO ---
+// --- COMPONENTE CONFIRM DIALOG ---
 const ConfirmDialog = ({ isOpen, title, message, onConfirm, onCancel, isLoading }) => {
   if (!isOpen) return null;
   return (
     <div className="fixed inset-0 bg-slate-900/30 backdrop-blur-[2px] flex items-center justify-center z-[200] p-4">
-      <div className="bg-white rounded-[2rem] p-6 w-full max-w-[320px] shadow-2xl animate-in fade-in zoom-in duration-200 border border-slate-100">
-        <div className="flex items-center gap-3 mb-4">
+      <div className="bg-white rounded-[2rem] p-6 w-full max-w-[320px] shadow-2xl animate-in fade-in zoom-in duration-200 border border-slate-100 text-center">
+        <div className="flex items-center gap-3 mb-4 text-left">
           <div className="shrink-0 w-10 h-10 bg-red-50 text-red-500 rounded-xl flex items-center justify-center">
             <AlertTriangle className="w-5 h-5" />
           </div>
-          <h3 className="text-lg font-bold text-slate-900 leading-tight uppercase tracking-tight">{title}</h3>
+          <h3 className="text-lg font-black text-slate-900 leading-tight uppercase tracking-tight">{title}</h3>
         </div>
-        <p className="text-slate-500 mb-6 text-sm font-normal leading-snug px-1">{message}</p>
+        <p className="text-slate-500 mb-6 text-sm font-normal leading-snug text-left px-1">{message}</p>
         <div className="flex gap-2">
           <button onClick={onCancel} disabled={isLoading} className="flex-1 py-2.5 text-xs font-black text-slate-400 uppercase tracking-widest hover:bg-slate-50 rounded-xl transition-all">
             Cancelar
@@ -71,20 +71,21 @@ function Proveedores() {
     direccion: ''
   });
 
-  const loadProveedores = useCallback(async () => {
-    setLoading(true);
+  // OPTIMIZACIÓN: Carga ultra-rápida sin retardos artificiales
+  const loadProveedores = useCallback(async (isFirstLoad = false) => {
+    if (isFirstLoad) setLoading(true);
     try {
       const response = await proveedoresAPI.getAll();
       setProveedores(response.data);
     } catch (error) {
-      setNotification({ message: 'Error al cargar los proveedores', type: 'error' });
+      setNotification({ message: 'Error al conectar con los proveedores', type: 'error' });
     } finally {
-      setTimeout(() => setLoading(false), 500);
+      setLoading(false);
     }
   }, []);
 
   useEffect(() => {
-    loadProveedores();
+    loadProveedores(true);
   }, [loadProveedores]);
 
   const filtered = proveedores.filter(p =>
@@ -126,9 +127,7 @@ function Proveedores() {
     setShowModal(true);
   };
 
-  const handleDeleteClick = (id) => {
-    setConfirmData({ isOpen: true, id });
-  };
+  const handleDeleteClick = (id) => { setConfirmData({ isOpen: true, id }); };
 
   const handleConfirmDelete = async () => {
     try {
@@ -153,11 +152,11 @@ function Proveedores() {
       <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mt-4">
         <div>
           <h1 className="text-3xl md:text-4xl font-black text-slate-900 tracking-tight">Proveedores</h1>
-          <p className="text-slate-500 font-medium">Directorio de aliados estratégicos para mantenimiento.</p>
+          <p className="text-slate-500 font-medium">Directorio de aliados estratégicos.</p>
         </div>
         <button
           onClick={() => setShowModal(true)}
-          className="w-full sm:w-auto flex items-center justify-center gap-2 bg-[#003366] text-white px-6 py-3 rounded-2xl font-bold hover:bg-[#001a33] shadow-lg shadow-blue-900/10 transition-all active:scale-95"
+          className="w-full sm:w-auto flex items-center justify-center gap-2 bg-[#003366] text-white px-6 py-3 rounded-2xl font-bold hover:bg-[#001a33] shadow-lg transition-all active:scale-95"
         >
           <Plus className="w-5 h-5" /> Nuevo Proveedor
         </button>
@@ -167,10 +166,10 @@ function Proveedores() {
         <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5" />
         <input
           type="text"
-          placeholder="Buscar por nombre o contacto..."
+          placeholder="Buscar empresa o contacto..."
           value={searchTerm}
           onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }}
-          className="w-full pl-12 pr-4 py-3 bg-white border border-slate-200 rounded-2xl shadow-sm focus:ring-4 focus:ring-[#003366]/10 outline-none transition-all"
+          className="w-full pl-12 pr-4 py-3 bg-white border border-slate-200 rounded-2xl shadow-sm focus:ring-4 focus:ring-[#003366]/5 outline-none transition-all font-medium text-slate-600"
         />
       </div>
 
@@ -178,7 +177,7 @@ function Proveedores() {
         {loading && (
           <div className="absolute inset-0 bg-white/60 backdrop-blur-[2px] z-20 flex flex-col items-center justify-center">
             <Loader2 className="w-10 h-10 text-[#003366] animate-spin mb-2" />
-            <span className="text-slate-600 font-bold">Actualizando directorio...</span>
+            <span className="text-slate-600 font-bold">Cargando directorio...</span>
           </div>
         )}
 
@@ -196,8 +195,6 @@ function Proveedores() {
               {currentItems.length > 0 ? (
                 currentItems.map((prov) => (
                   <tr key={prov.id} className="hover:bg-slate-50/50 transition-colors flex flex-col md:table-row p-6 md:p-0">
-
-                    {/* Empresa */}
                     <td className="px-0 md:px-8 py-2 md:py-5 block md:table-cell">
                       <div className="flex items-center justify-between md:justify-start gap-4">
                         <span className="text-[10px] font-black text-slate-300 uppercase tracking-widest md:hidden">Empresa</span>
@@ -210,7 +207,6 @@ function Proveedores() {
                       </div>
                     </td>
 
-                    {/* Contacto */}
                     <td className="px-0 md:px-8 py-2 md:py-5 block md:table-cell border-t border-slate-50 md:border-none mt-1 md:mt-0 pt-3 md:pt-5">
                       <div className="flex justify-between md:block">
                         <span className="text-[10px] font-black text-slate-300 uppercase tracking-widest md:hidden">Contacto</span>
@@ -221,7 +217,6 @@ function Proveedores() {
                       </div>
                     </td>
 
-                    {/* Teléfono / Email */}
                     <td className="px-0 md:px-8 py-2 md:py-5 block md:table-cell border-t border-slate-50 md:border-none mt-1 md:mt-0 pt-3 md:pt-5">
                       <div className="flex justify-between md:block">
                         <span className="text-[10px] font-black text-slate-300 uppercase tracking-widest md:hidden">Teléfono / Email</span>
@@ -236,7 +231,6 @@ function Proveedores() {
                       </div>
                     </td>
 
-                    {/* Acciones */}
                     <td className="px-0 md:px-8 py-2 md:py-5 block md:table-cell border-t border-slate-50 md:border-none mt-1 md:mt-0 pt-3 md:pt-5">
                       <div className="flex items-center justify-between md:justify-end gap-2">
                         <span className="text-[10px] font-black text-slate-300 uppercase tracking-widest md:hidden">Acciones</span>
@@ -253,23 +247,24 @@ function Proveedores() {
                   </tr>
                 ))
               ) : (
-                !loading && <tr><td colSpan="4" className="px-8 py-20 text-center text-slate-400">No se encontraron proveedores.</td></tr>
+                !loading && (
+                  <tr>
+                    <td colSpan="4" className="px-8 py-20 text-center text-slate-400 font-medium">
+                      No se encontraron proveedores registrados.
+                    </td>
+                  </tr>
+                )
               )}
             </tbody>
           </table>
         </div>
-        {/* Paginación Minimalista y Limpia */}
+
         {!loading && filtered.length > 0 && (
-          <div className="p-4 bg-slate-50/50 border-t border-slate-100 flex flex-col sm:flex-row justify-between items-center gap-4">
-
-            {/* Contador de registros (Mantiene tu texto original) */}
+          <div className="p-6 bg-slate-50/50 border-t border-slate-100 flex flex-col sm:flex-row justify-between items-center gap-4">
             <p className="text-sm text-slate-500 font-medium">
-              Mostrando <span className="text-slate-900 font-bold">{indexOfFirstItem + 1}</span> a <span className="text-slate-900 font-bold">{Math.min(indexOfLastItem, filtered.length)}</span> de {filtered.length} movimientos
+              Mostrando <span className="text-slate-900 font-bold">{indexOfFirstItem + 1}</span> a <span className="text-slate-900 font-bold">{Math.min(indexOfLastItem, filtered.length)}</span> de {filtered.length} proveedores
             </p>
-
-            {/* Controles de navegación compactos */}
             <div className="flex items-center gap-3">
-              {/* Flecha Anterior */}
               <button
                 disabled={currentPage === 1}
                 onClick={() => setCurrentPage(prev => prev - 1)}
@@ -277,8 +272,6 @@ function Proveedores() {
               >
                 <ChevronLeft className="w-5 h-5 text-slate-600" />
               </button>
-
-              {/* Cuadrito de Número Actual y Total */}
               <div className="flex items-center gap-3 px-1">
                 <div className="w-10 h-10 rounded-xl bg-[#003366] text-white flex items-center justify-center font-bold text-sm shadow-lg shadow-blue-900/20">
                   {currentPage}
@@ -286,8 +279,6 @@ function Proveedores() {
                 <span className="text-slate-300 font-light text-xl">/</span>
                 <span className="text-sm font-bold text-slate-500">{totalPages}</span>
               </div>
-
-              {/* Flecha Siguiente */}
               <button
                 disabled={currentPage === totalPages}
                 onClick={() => setCurrentPage(prev => prev + 1)}
@@ -304,7 +295,7 @@ function Proveedores() {
         <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center z-[120] p-4">
           <div className="bg-white rounded-[2.5rem] p-6 md:p-10 w-full max-w-md shadow-2xl animate-in zoom-in duration-200 max-h-[95vh] overflow-y-auto">
             <div className="flex justify-between items-center mb-6">
-              <h2 className="text-2xl font-black text-slate-900">{editingProvider ? 'Editar Proveedor' : 'Nuevo Registro'}</h2>
+              <h2 className="text-2xl font-black text-slate-900 uppercase tracking-tight">{editingProvider ? 'Editar Proveedor' : 'Nuevo Proveedor'}</h2>
               <button onClick={closeModal} className="p-2 bg-slate-50 rounded-full text-slate-400 hover:text-red-500 transition-colors"><X className="w-6 h-6" /></button>
             </div>
             <form onSubmit={handleSubmit} className="space-y-4">
@@ -333,9 +324,11 @@ function Proveedores() {
                   <input type="text" value={formData.direccion} onChange={(e) => setFormData({ ...formData, direccion: e.target.value })} className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 outline-none focus:ring-4 focus:ring-[#003366]/5 transition-all text-sm font-medium" />
                 </div>
               </div>
-              <button type="submit" className="w-full py-3.5 bg-[#003366] text-white font-bold rounded-xl hover:bg-[#001a33] shadow-lg shadow-blue-900/10 transition-all mt-2 active:scale-[0.98]">
-                {editingProvider ? 'Actualizar Proveedor' : 'Guardar Proveedor'}
-              </button>
+              <div className="flex justify-center pt-2">
+                <button type="submit" className="w-full sm:w-2/3 py-3.5 bg-[#003366] text-white font-black rounded-2xl hover:bg-[#001a33] shadow-lg shadow-blue-900/20 transition-all uppercase tracking-widest text-xs active:scale-95">
+                  {editingProvider ? 'Guardar Cambios' : 'Registrar Proveedor'}
+                </button>
+              </div>
             </form>
           </div>
         </div>
@@ -344,12 +337,10 @@ function Proveedores() {
       <ConfirmDialog
         isOpen={confirmData.isOpen}
         title="¿Desactivar proveedor?"
-        message="El proveedor no aparecerá en nuevos registros pero se mantendrá en el historial."
+        message="El proveedor no aparecerá en nuevos registros pero se mantendrá el historial."
         onConfirm={handleConfirmDelete}
         onCancel={() => setConfirmData({ isOpen: false, id: null })}
-        isLoading={false}
       />
-
       {notification && <Notification message={notification.message} type={notification.type} onClose={() => setNotification(null)} />}
     </div>
   );

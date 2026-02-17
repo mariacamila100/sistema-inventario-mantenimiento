@@ -2,32 +2,53 @@ const db = require('../config/database');
 
 const informesController = {
     getInventarioCompleto: async (req, res) => {
-        try {
-            const query = `
-                SELECT 
-                    p.codigo AS 'CÓDIGO', 
-                    p.nombre AS 'PRODUCTO', 
-                    IFNULL(m.nombre, '—') AS 'MARCA', 
-                    IFNULL(c.nombre, '—') AS 'CATEGORÍA', 
-                    p.stock_actual AS 'STOCK', 
-                    p.precio_unitario AS 'PRECIO UNITARIO', 
-                    (p.stock_actual * p.precio_unitario) AS 'VALOR TOTAL'
-                FROM productos p
-                LEFT JOIN marcas m ON p.marca_id = m.id
-                LEFT JOIN categorias c ON p.categoria_id = c.id
-                WHERE p.estado = 'Activo'
-                ORDER BY p.nombre ASC`;
+    try {
+        const { marca, categoria, mes } = req.query;
+        let valores = [];
+        
+        let query = `
+            SELECT 
+                p.codigo AS 'CÓDIGO', 
+                p.nombre AS 'PRODUCTO', 
+                IFNULL(m.nombre, '—') AS 'MARCA', 
+                IFNULL(c.nombre, '—') AS 'CATEGORÍA', 
+                p.stock_actual AS 'STOCK', 
+                p.precio_unitario AS 'PRECIO UNITARIO', 
+                (p.stock_actual * p.precio_unitario) AS 'VALOR TOTAL'
+            FROM productos p
+            LEFT JOIN marcas m ON p.marca_id = m.id
+            LEFT JOIN categorias c ON p.categoria_id = c.id
+            WHERE p.estado = 'Activo'`;
 
-            const [rows] = await db.query(query);
-            // Sumatoria basada en el precio maestro actual (Valorización de Reposición)
-            const granTotal = rows.reduce((acc, item) => acc + parseFloat(item['VALOR TOTAL'] || 0), 0);
-
-            res.json({ detalles: rows, sumatoriaTotal: granTotal });
-        } catch (error) {
-            console.error("Error en informe:", error);
-            res.status(500).json({ error: 'Error al generar el informe' });
+        // Filtro por Marca
+        if (marca && marca !== 'todas') {
+            query += ` AND p.marca_id = ?`;
+            valores.push(marca);
         }
-    },
+
+        // Filtro por Categoría
+        if (categoria && categoria !== 'todas') {
+            query += ` AND p.categoria_id = ?`;
+            valores.push(categoria);
+        }
+
+        // Filtro por Mes (basado en la fecha de creación del producto)
+        if (mes && mes !== 'todos') {
+            query += ` AND MONTH(p.created_at) = ?`;
+            valores.push(mes);
+        }
+
+        query += ` ORDER BY p.nombre ASC`;
+
+        const [rows] = await db.query(query, valores);
+        const granTotal = rows.reduce((acc, item) => acc + parseFloat(item['VALOR TOTAL'] || 0), 0);
+
+        res.json({ detalles: rows, sumatoriaTotal: granTotal });
+    } catch (error) {
+        console.error("Error en informe:", error);
+        res.status(500).json({ error: 'Error al generar el informe' });
+    }
+},
 
     getStockMinimo: async (req, res) => {
         try {

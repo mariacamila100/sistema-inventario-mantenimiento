@@ -4,9 +4,10 @@ import {
   Plus, ArrowUp, ArrowDown, Search, X,
   CheckCircle2, AlertCircle, Loader2,
   ChevronLeft, ChevronRight, Calendar, ChevronDown,
-  FileText, DollarSign
+  FileText, DollarSign, User
 } from 'lucide-react';
 
+// --- COMPONENTE DE NOTIFICACIÓN ---
 const Notification = ({ message, type, onClose }) => {
   useEffect(() => {
     const timer = setTimeout(onClose, 3000);
@@ -34,26 +35,18 @@ function Movimientos() {
   const [searchTerm, setSearchTerm] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [notification, setNotification] = useState(null);
-
   const [searchProduct, setSearchProduct] = useState('');
   const [isSelectOpen, setIsSelectOpen] = useState(false);
-
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(5);
 
   const [formData, setFormData] = useState({
-    producto_id: '',
-    tipo: 'entrada',
-    cantidad: 1,
-    precio_historico: '',
-    motivo: '',
-    observaciones: '',
-    numero_documento: '',
-    proveedor_id: ''
+    producto_id: '', tipo: 'entrada', cantidad: 1, precio_historico: '',
+    motivo: '', observaciones: '', numero_documento: '', proveedor_id: ''
   });
 
   const loadData = useCallback(async () => {
-    setLoading(true);
+    if (movimientos.length === 0) setLoading(true);
     try {
       const [movRes, prodRes, provRes] = await Promise.all([
         movimientosAPI.getAll(),
@@ -64,24 +57,28 @@ function Movimientos() {
       setProductos(prodRes.data);
       setProveedores(provRes.data);
     } catch (error) {
-      setNotification({ message: 'Error al cargar los datos', type: 'error' });
+      setNotification({ message: 'Error al sincronizar datos', type: 'error' });
     } finally {
-      setTimeout(() => setLoading(false), 500);
+      setLoading(false);
     }
-  }, []);
+  }, [movimientos.length]);
 
   useEffect(() => { loadData(); }, [loadData]);
 
-  const filtered = movimientos.filter(m =>
-    m.producto_nombre?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    m.motivo?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    m.numero_documento?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filtered = useMemo(() => {
+    const term = searchTerm.toLowerCase();
+    return movimientos.filter(m =>
+      m.producto_nombre?.toLowerCase().includes(term) ||
+      m.motivo?.toLowerCase().includes(term) ||
+      m.numero_documento?.toLowerCase().includes(term)
+    );
+  }, [movimientos, searchTerm]);
 
   const filteredProducts = useMemo(() => {
+    const term = searchProduct.toLowerCase();
     return productos.filter(p =>
-      p.nombre.toLowerCase().includes(searchProduct.toLowerCase()) ||
-      p.codigo?.toLowerCase().includes(searchProduct.toLowerCase())
+      p.nombre.toLowerCase().includes(term) ||
+      p.codigo?.toLowerCase().includes(term)
     );
   }, [productos, searchProduct]);
 
@@ -90,10 +87,88 @@ function Movimientos() {
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
   const currentItems = filtered.slice(indexOfFirstItem, indexOfLastItem);
 
+  // --- RENDERIZADO DE FILAS AJUSTADO AL NUEVO DISEÑO ---
+  const rowsRendered = useMemo(() => {
+    return currentItems.map((mov) => (
+      <tr key={mov.id} className="hover:bg-slate-50/50 transition-colors flex flex-col lg:table-row p-6 lg:p-0">
+        {/* Fecha */}
+        <td className="px-0 lg:px-8 py-2 lg:py-5 block lg:table-cell">
+          <div className="flex items-center justify-between lg:justify-start gap-3">
+            <span className="text-[10px] font-black text-slate-300 uppercase tracking-widest lg:hidden">Fecha</span>
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-slate-100 rounded-xl text-slate-500 shrink-0">
+                <Calendar className="w-4 h-4" />
+              </div>
+              <div className="text-sm font-bold text-slate-700">
+                {new Date(mov.created_at || mov.fecha).toLocaleDateString()}
+                <span className="block text-[10px] text-slate-400 font-medium lg:hidden">
+                  {new Date(mov.created_at || mov.fecha).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                </span>
+              </div>
+            </div>
+          </div>
+        </td>
+
+        {/* Detalle */}
+        <td className="px-0 lg:px-8 py-2 lg:py-5 block lg:table-cell border-t border-slate-50 lg:border-none mt-1 lg:mt-0 pt-3 lg:pt-5">
+          <div className="flex justify-between lg:block gap-4">
+            <span className="text-[10px] font-black text-slate-300 uppercase tracking-widest lg:hidden mt-0.5">Detalle</span>
+            <div className="text-right lg:text-left">
+              <div className="text-sm font-black text-slate-800 uppercase tracking-tight leading-tight">
+                {mov.producto_nombre}
+              </div>
+              <div className="text-[11px] text-slate-400 font-medium italic">
+                {mov.numero_documento || mov.motivo}
+              </div>
+            </div>
+          </div>
+        </td>
+
+        {/* Tipo */}
+        <td className="px-0 lg:px-8 py-2 lg:py-5 block lg:table-cell border-t border-slate-50 lg:border-none mt-1 lg:mt-0 pt-3 lg:pt-5">
+          <div className="flex items-center justify-between lg:justify-center">
+            <span className="text-[10px] font-black text-slate-300 uppercase tracking-widest lg:hidden">Tipo</span>
+            <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest flex items-center gap-1 ${
+              mov.tipo === 'entrada' 
+                ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' 
+                : 'bg-amber-50 text-amber-600 border border-amber-100'
+            }`}>
+              {mov.tipo === 'entrada' ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />}
+              {mov.tipo}
+            </span>
+          </div>
+        </td>
+
+        {/* Cantidad */}
+        <td className="px-0 lg:px-8 py-2 lg:py-5 block lg:table-cell border-t border-slate-50 lg:border-none mt-1 lg:mt-0 pt-3 lg:pt-5 text-center">
+          <div className="flex items-center justify-between lg:justify-center">
+            <span className="text-[10px] font-black text-slate-300 uppercase tracking-widest lg:hidden">Cantidad</span>
+            <div className={`text-base font-black ${mov.tipo === 'entrada' ? 'text-emerald-600' : 'text-amber-600'}`}>
+              {mov.tipo === 'entrada' ? '+' : '-'}{mov.cantidad}
+            </div>
+          </div>
+        </td>
+
+        {/* Usuario */}
+        <td className="px-0 lg:px-8 py-2 lg:py-5 block lg:table-cell border-t border-slate-50 lg:border-none mt-1 lg:mt-0 pt-3 lg:pt-5 text-right">
+          <div className="flex items-center justify-between lg:justify-end gap-2">
+            <span className="text-[10px] font-black text-slate-300 uppercase tracking-widest lg:hidden">Usuario</span>
+            <div className="flex items-center gap-2 justify-end">
+              <div className="text-xs font-bold text-slate-600">{mov.username || mov.usuario_nombre || 'Admin'}</div>
+              <div className="w-7 h-7 bg-[#003366]/10 rounded-full flex items-center justify-center text-[#003366]">
+                <User className="w-3.5 h-3.5" />
+              </div>
+            </div>
+          </div>
+        </td>
+      </tr>
+    ));
+  }, [currentItems]);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     const productoSeleccionado = productos.find(p => p.id === Number(formData.producto_id));
-    
+
     if (formData.tipo === 'salida' && productoSeleccionado && Number(formData.cantidad) > productoSeleccionado.stock_actual) {
       setNotification({
         message: `Stock insuficiente. Disponible: ${productoSeleccionado.stock_actual}`,
@@ -114,10 +189,7 @@ function Movimientos() {
       loadData();
       closeModal();
     } catch (error) {
-      setNotification({
-        message: error.response?.data?.error || 'Error al registrar',
-        type: 'error'
-      });
+      setNotification({ message: error.response?.data?.error || 'Error al registrar', type: 'error' });
     }
   };
 
@@ -133,7 +205,6 @@ function Movimientos() {
 
   return (
     <div className="w-full max-w-7xl mx-auto p-4 md:p-6 lg:p-8 space-y-6">
-
       <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mt-4">
         <div>
           <h1 className="text-3xl md:text-4xl font-black text-slate-900 tracking-tight">Movimientos</h1>
@@ -162,105 +233,105 @@ function Movimientos() {
         {loading && (
           <div className="absolute inset-0 bg-white/60 backdrop-blur-[2px] z-20 flex flex-col items-center justify-center">
             <Loader2 className="w-10 h-10 text-[#003366] animate-spin mb-2" />
-            <span className="text-slate-600 font-bold">Cargando datos...</span>
+            <span className="text-slate-600 font-bold">Sincronizando...</span>
           </div>
         )}
 
         <div className="overflow-x-auto w-full">
-         <table className="w-full text-left border-collapse">
-  <thead className="hidden lg:table-header-group">
-    <tr className="bg-slate-50/50 border-b border-slate-100">
-      {/* Usamos px-8 y py-5 como en Productos */}
-      <th className="px-8 py-5 text-xs font-bold text-slate-400 uppercase tracking-widest">Fecha</th>
-      <th className="px-8 py-5 text-xs font-bold text-slate-400 uppercase tracking-widest">Detalle</th>
-      <th className="px-8 py-5 text-xs font-bold text-slate-400 uppercase tracking-widest text-center">Tipo</th>
-      <th className="px-8 py-5 text-xs font-bold text-slate-400 uppercase tracking-widest text-center">Cantidad</th>
-      <th className="px-8 py-5 text-xs font-bold text-slate-400 uppercase tracking-widest text-right">Responsable</th>
-    </tr>
-  </thead>
-  <tbody className="divide-y divide-slate-100">
-    {currentItems.length > 0 ? (
-      currentItems.map((mov) => (
-        <tr key={mov.id} className="hover:bg-slate-50 transition-colors flex flex-col lg:table-row p-4 sm:p-6 lg:p-0 border-b lg:border-none">
-          
-          {/* Fecha */}
-          <td className="lg:px-8 lg:py-5 py-2">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-slate-100 rounded-xl text-[#003366] shrink-0">
-                <Calendar className="w-5 h-5" />
-              </div>
-              <div className="min-w-0">
-                <p className="font-bold text-slate-800 text-sm tracking-tight">
-                  {new Date(mov.fecha).toLocaleDateString()}
-                </p>
-                <p className="text-[10px] text-slate-400 font-mono font-bold tracking-wider uppercase">Registro Manual</p>
-              </div>
-            </div>
-          </td>
-
-          {/* Detalle */}
-          <td className="lg:px-8 lg:py-5 py-2">
-            <div className="flex flex-row lg:flex-col items-center lg:items-start justify-between lg:justify-center gap-1">
-              <span className="text-[10px] font-black text-slate-300 uppercase tracking-widest lg:hidden">Producto</span>
-              <div className="flex flex-col lg:gap-1 text-right lg:text-left">
-                <span className="text-slate-800 font-bold text-sm uppercase tracking-tight">
-                  {mov.producto_nombre}
-                </span>
-                <span className="flex items-center lg:justify-start justify-end gap-1.5 text-slate-400 font-medium text-[10px] uppercase">
-                  <FileText className="w-3 h-3 text-slate-300 hidden lg:block" /> {mov.numero_documento || mov.motivo}
-                </span>
-              </div>
-            </div>
-          </td>
-
-          {/* Tipo */}
-          <td className="lg:px-8 lg:py-5 py-2">
-            <div className="flex items-center justify-between lg:justify-center">
-              <span className="text-[10px] font-black text-slate-300 uppercase tracking-widest lg:hidden">Operación</span>
-              <div className={`px-3 py-1 rounded-full font-black text-[10px] uppercase tracking-tighter flex items-center gap-1.5 ${
-                mov.tipo === 'entrada' 
-                ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' 
-                : 'bg-orange-50 text-orange-600 border border-orange-100'
-              }`}>
-                {mov.tipo === 'entrada' ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />}
-                {mov.tipo}
-              </div>
-            </div>
-          </td>
-
-          {/* Cantidad */}
-          <td className="lg:px-8 lg:py-5 py-2">
-            <div className="flex items-center justify-between lg:justify-center">
-              <span className="text-[10px] font-black text-slate-300 uppercase tracking-widest lg:hidden">Cantidad</span>
-              <span className="font-bold text-slate-800 text-sm">{mov.cantidad}</span>
-            </div>
-          </td>
-
-          {/* Responsable */}
-          <td className="lg:px-8 lg:py-5 py-4 lg:py-5 mt-2 lg:mt-0 border-t lg:border-none border-slate-50">
-            <div className="flex justify-between lg:justify-end items-center gap-2">
-              <span className="text-[10px] font-black text-slate-300 uppercase tracking-widest lg:hidden">Usuario</span>
-              <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest bg-slate-100 px-2 py-1 rounded-md">
-                MACA
-              </span>
-            </div>
-          </td>
-
+     <div className="bg-white rounded-[2rem] shadow-xl shadow-slate-200/50 border border-slate-100 overflow-hidden relative min-h-[400px]">
+  <div className="overflow-x-auto w-full">
+    <table className="w-full text-left border-collapse">
+      <thead className="hidden lg:table-header-group">
+        <tr className="bg-slate-50/50 border-b border-slate-100">
+          <th className="px-8 py-5 text-xs font-bold text-slate-400 uppercase tracking-widest">Fecha</th>
+          <th className="px-8 py-5 text-xs font-bold text-slate-400 uppercase tracking-widest">Detalle</th>
+          <th className="px-8 py-5 text-xs font-bold text-slate-400 uppercase tracking-widest text-center">Tipo</th>
+          <th className="px-8 py-5 text-xs font-bold text-slate-400 uppercase tracking-widest text-center">Cantidad</th>
+          <th className="px-8 py-5 text-xs font-bold text-slate-400 uppercase tracking-widest text-right">Usuario</th>
         </tr>
-      ))
-    ) : (
-      !loading && (
-        <tr>
-          <td colSpan="5" className="px-8 py-20 text-center text-slate-400 font-medium">
-            No hay movimientos registrados.
-          </td>
-        </tr>
-      )
-    )}
-  </tbody>
-</table>
-        </div>
+      </thead>
+      <tbody className="divide-y divide-slate-100 block lg:table-row-group">
+        {filtered.length > 0 ? (
+          currentItems.map((mov) => (
+            <tr key={mov.id} className="hover:bg-slate-50/50 transition-colors flex flex-col lg:table-row p-6 lg:p-0">
+              
+              {/* Fecha - Estilo suavizado */}
+              <td className="px-0 lg:px-8 py-2 lg:py-5 block lg:table-cell">
+                <div className="flex items-center justify-between lg:justify-start gap-3">
+                  <span className="text-[10px] font-bold text-slate-300 uppercase tracking-widest lg:hidden">Fecha</span>
+                  <span className="text-sm font-bold text-slate-600">
+                    {new Date(mov.created_at || mov.fecha).toLocaleDateString()}
+                  </span>
+                </div>
+              </td>
 
+              {/* Detalle - Jerarquía visual clara sin negrillas agresivas */}
+              <td className="px-0 lg:px-8 py-2 lg:py-5 block lg:table-cell border-t border-slate-50 lg:border-none mt-1 lg:mt-0 pt-3 lg:pt-5">
+                <div className="flex justify-between lg:block gap-4">
+                  <span className="text-[10px] font-bold text-slate-300 uppercase tracking-widest lg:hidden mt-0.5">Detalle</span>
+                  <div className="text-right lg:text-left">
+                    <div className="text-sm font-semibold text-slate-700 leading-tight">
+                      {mov.producto_nombre}
+                    </div>
+                    <div className="text-[11px] text-slate-400 font-normal">
+                      {mov.numero_documento || mov.motivo}
+                    </div>
+                  </div>
+                </div>
+              </td>
+
+              {/* Tipo - Badge minimalista */}
+              <td className="px-0 lg:px-8 py-2 lg:py-5 block lg:table-cell border-t border-slate-50 lg:border-none mt-1 lg:mt-0 pt-3 lg:pt-5">
+                <div className="flex items-center justify-between lg:justify-center">
+                  <span className="text-[10px] font-bold text-slate-300 uppercase tracking-widest lg:hidden">Tipo</span>
+                  <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide border ${
+                    mov.tipo === 'entrada' 
+                      ? 'bg-emerald-50 text-emerald-600 border-emerald-100' 
+                      : 'bg-amber-50 text-amber-600 border-amber-100'
+                  }`}>
+                    {mov.tipo}
+                  </span>
+                </div>
+              </td>
+
+              {/* Cantidad - Enfoque en el número */}
+              <td className="px-0 lg:px-8 py-2 lg:py-5 block lg:table-cell border-t border-slate-50 lg:border-none mt-1 lg:mt-0 pt-3 lg:pt-5 text-center">
+                <div className="flex items-center justify-between lg:justify-center">
+                  <span className="text-[10px] font-bold text-slate-300 uppercase tracking-widest lg:hidden">Cantidad</span>
+                  <div className={`text-sm font-bold ${mov.tipo === 'entrada' ? 'text-emerald-600' : 'text-amber-600'}`}>
+                    {mov.tipo === 'entrada' ? '+' : '-'}{mov.cantidad}
+                  </div>
+                </div>
+              </td>
+
+              {/* Usuario - Sin iconos, estilo minimalista */}
+              <td className="px-0 lg:px-8 py-2 lg:py-5 block lg:table-cell border-t border-slate-50 lg:border-none mt-1 lg:mt-0 pt-3 lg:pt-5 text-right">
+                <div className="flex items-center justify-between lg:justify-end gap-2">
+                  <span className="text-[10px] font-bold text-slate-300 uppercase tracking-widest lg:hidden">Usuario</span>
+                  <span className="text-xs font-medium text-slate-500 bg-slate-100/80 px-2.5 py-1 rounded-lg">
+                    {mov.username || mov.usuario_nombre || 'Admin'}
+                  </span>
+                </div>
+              </td>
+
+            </tr>
+          ))
+        ) : (
+          !loading && (
+            <tr>
+              <td colSpan="5" className="px-8 py-20 text-center text-slate-400 font-medium w-full block lg:table-cell">
+                No se encontraron movimientos que coincidan con la búsqueda.
+              </td>
+            </tr>
+          )
+        )}
+      </tbody>
+    </table>
+  </div>
+</div>
+    </div>
+
+        {/* Paginación */}
         {!loading && filtered.length > 0 && (
           <div className="p-4 bg-white border-t border-slate-50 flex flex-col sm:flex-row justify-between items-center gap-4">
             <p className="text-sm text-slate-400 font-semibold tracking-tight">
@@ -283,10 +354,10 @@ function Movimientos() {
         )}
       </div>
 
-     {showModal && (
+      {/* Modal - Se mantiene igual con los estilos de formulario que ya tenías */}
+      {showModal && (
         <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center z-[120] p-2">
-          <div className="bg-white rounded-[2rem] p-6 sm:p-8 w-full max-w-2xl shadow-2xl animate-in zoom-in duration-200 border-4 border-white">
-            
+          <div className="bg-white rounded-[2rem] p-6 sm:p-8 w-full max-w-2xl shadow-2xl animate-in zoom-in duration-200 border-4 border-white overflow-y-auto max-h-[95vh]">
             <div className="flex justify-between items-center mb-5">
               <h2 className="text-xl sm:text-2xl font-black text-slate-900 uppercase tracking-tight italic">Nuevo Registro</h2>
               <button onClick={closeModal} className="p-2 bg-slate-50 rounded-full text-slate-400 hover:text-red-500 transition-colors">
@@ -295,6 +366,7 @@ function Movimientos() {
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-4">
+              {/* Selector de Producto Personalizado */}
               <div className="space-y-1 relative">
                 <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider ml-1">Producto *</label>
                 <div
@@ -313,7 +385,7 @@ function Movimientos() {
                       <input
                         autoFocus
                         type="text"
-                        placeholder="Buscar..."
+                        placeholder="Buscar por nombre o código..."
                         className="w-full px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs outline-none focus:ring-2 focus:ring-[#003366]/10"
                         value={searchProduct}
                         onChange={(e) => setSearchProduct(e.target.value)}
@@ -331,7 +403,7 @@ function Movimientos() {
                           className="px-4 py-2 hover:bg-[#003366] hover:text-white cursor-pointer group transition-colors border-b border-slate-50 last:border-0"
                         >
                           <p className="font-bold text-xs">{prod.nombre}</p>
-                          <p className="text-[9px] uppercase opacity-70 font-black">Disponible: {prod.stock_actual}</p>
+                          <p className="text-[9px] uppercase opacity-70 font-black">Disponible: {prod.stock_actual} | {prod.codigo}</p>
                         </div>
                       ))}
                     </div>
@@ -361,16 +433,13 @@ function Movimientos() {
                     <DollarSign className="absolute left-3.5 top-2.5 w-4 h-4 text-slate-400" />
                     <input type="number" required step="0.01" value={formData.precio_historico} onChange={(e) => setFormData({ ...formData, precio_historico: e.target.value })} placeholder="0.00" className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 font-bold outline-none text-xs text-[#003366]" />
                   </div>
-                  {formData.tipo === 'entrada' && (
-                    <p className="text-[8px] text-emerald-600 font-black uppercase tracking-widest mt-1 ml-1">※ Actualiza el catálogo</p>
-                  )}
                 </div>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <div className="space-y-1">
                   <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider ml-1">N° Documento</label>
-                  <input type="text" value={formData.numero_documento} onChange={(e) => setFormData({ ...formData, numero_documento: e.target.value })} placeholder="FAC-000" className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-xs font-bold" />
+                  <input type="text" value={formData.numero_documento} onChange={(e) => setFormData({ ...formData, numero_documento: e.target.value })} placeholder="Ej: FACT-001" className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-xs font-bold" />
                 </div>
                 <div className="space-y-1">
                   <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider ml-1">Proveedor (Opcional)</label>
@@ -383,7 +452,7 @@ function Movimientos() {
 
               <div className="space-y-1">
                 <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider ml-1">Motivo / Concepto *</label>
-                <input type="text" required value={formData.motivo} onChange={(e) => setFormData({ ...formData, motivo: e.target.value })} placeholder="Ej: Carga inicial..." className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-xs font-medium" />
+                <input type="text" required value={formData.motivo} onChange={(e) => setFormData({ ...formData, motivo: e.target.value })} placeholder="Ej: Reposición de stock..." className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-xs font-medium" />
               </div>
 
               <div className="flex justify-center pt-3">

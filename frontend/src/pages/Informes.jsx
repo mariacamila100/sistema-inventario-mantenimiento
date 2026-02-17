@@ -1,7 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import api from '../services/api';
-import { FileSpreadsheet, Package, AlertCircle, Users, FileText, Wind, TrendingUp, History, Search, Filter } from 'lucide-react';
+import { 
+  FileSpreadsheet, Package, AlertCircle, Users, FileText, 
+  Wind, TrendingUp, History, Search, Filter, CalendarDays 
+} from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { exportToPDF } from '../services/reportGenerator';
 import logoEmpresa from '../assets/logoAsset.png';
@@ -14,12 +17,41 @@ function Informes() {
   const [tipoReporte, setTipoReporte] = useState('inventario');
   const [totalInforme, setTotalInforme] = useState(0);
 
+  // Estados para datos de filtros (Opciones de la DB)
+  const [marcas, setMarcas] = useState([]);
+  const [categorias, setCategorias] = useState([]);
+
+  // Estados para valores seleccionados
   const [filtroProducto, setFiltroProducto] = useState('');
   const [filtroTipo, setFiltroTipo] = useState('todos');
+  const [filtroMarca, setFiltroMarca] = useState('todas');
+  const [filtroCategoria, setFiltroCategoria] = useState('todas');
+  const [filtroMes, setFiltroMes] = useState('todos');
+
+  const meses = [
+    { id: '01', name: 'Enero' }, { id: '02', name: 'Febrero' }, { id: '03', name: 'Marzo' },
+    { id: '04', name: 'Abril' }, { id: '05', name: 'Mayo' }, { id: '06', name: 'Junio' },
+    { id: '07', name: 'Julio' }, { id: '08', name: 'Agosto' }, { id: '09', name: 'Septiembre' },
+    { id: '10', name: 'Octubre' }, { id: '11', name: 'Noviembre' }, { id: '12', name: 'Diciembre' }
+  ];
 
   useEffect(() => {
     fetchInitialData();
+    loadFilterOptions();
   }, []);
+
+  const loadFilterOptions = async () => {
+    try {
+      const [mRes, cRes] = await Promise.all([
+        api.get('/marcas'),
+        api.get('/categorias')
+      ]);
+      setMarcas(mRes.data);
+      setCategorias(cRes.data);
+    } catch (error) {
+      console.error("Error cargando filtros:", error);
+    }
+  };
 
   const fetchInitialData = async () => {
     setLoading(true);
@@ -28,25 +60,26 @@ function Informes() {
       setData(res.data);
       const reportePrioritario = location.state?.tipo || 'inventario';
       generarReporte(reportePrioritario);
-    } catch (error) { 
-      console.error("Error al cargar datos:", error); 
-    } finally { 
-      setLoading(false); 
+    } catch (error) {
+      console.error("Error al cargar datos:", error);
+    } finally {
+      setLoading(false);
     }
   };
 
-  const generarReporte = async (tipo, pNombre = filtroProducto, pTipo = filtroTipo) => {
+  const generarReporte = async (tipo) => {
     setTipoReporte(tipo);
     try {
+      // Construcción dinámica de URLs según el tipo y filtros
       const endpoints = {
-        inventario: '/informes/inventario-completo',
+        inventario: `/informes/inventario-completo?marca=${filtroMarca}&categoria=${filtroCategoria}&mes=${filtroMes}`,
         critico: '/informes/stock-critico',
         proveedores: '/informes/proveedores',
-        kardex: `/informes/kardex?producto=${pNombre}&tipo=${pTipo}`
+        kardex: `/informes/kardex?producto=${filtroProducto}&tipo=${filtroTipo}`
       };
-      
+
       const res = await api.get(endpoints[tipo]);
-      
+
       if (tipo === 'inventario') {
         setReporteActual(res.data.detalles || []);
         setTotalInforme(res.data.sumatoriaTotal || 0);
@@ -54,9 +87,9 @@ function Informes() {
         setReporteActual(res.data || []);
         setTotalInforme(0);
       }
-    } catch (error) { 
+    } catch (error) {
       console.error("Error al generar reporte:", error);
-      setReporteActual([]); 
+      setReporteActual([]);
     }
   };
 
@@ -79,7 +112,6 @@ function Informes() {
       const reporteFormateado = reporteActual.map(row => {
         const fila = { ...row };
         Object.keys(fila).forEach(key => {
-          // Ajustado para detectar PRECIO, VALOR, SUBTOTAL e HISTÓRICO
           if (key.includes('PRECIO') || key.includes('VALOR') || key.includes('SUBTOTAL') || key.includes('HISTÓRICO')) {
             fila[key] = formatMoney(fila[key]);
           }
@@ -99,7 +131,8 @@ function Informes() {
 
   return (
     <div className="max-w-7xl mx-auto p-4 md:p-8 space-y-6 h-screen flex flex-col font-sans overflow-hidden">
-
+      
+      {/* Header */}
       <div className="flex items-center gap-3 shrink-0">
         <div className="p-3 bg-[#003366] rounded-2xl">
           <FileText className="w-6 h-6 text-white" />
@@ -110,6 +143,7 @@ function Informes() {
         </div>
       </div>
 
+      {/* Selector de tipo de reporte */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 shrink-0">
         {[
           { id: 'inventario', label: 'Inventario General', icon: Package, activeClass: 'border-[#00529b] bg-blue-50/50 text-[#00529b]', iconClass: 'bg-[#00529b]' },
@@ -136,51 +170,103 @@ function Informes() {
         ))}
       </div>
 
+      {/* Panel Principal */}
       <div className="bg-white rounded-[2.5rem] border-2 border-slate-50 shadow-2xl shadow-slate-200/50 flex flex-col flex-1 overflow-hidden mb-4">
         <div className="px-8 py-5 border-b border-slate-50 flex flex-col md:flex-row justify-between items-center gap-4 shrink-0 bg-white">
-          <div className="flex flex-col gap-1">
+          <div className="flex flex-col gap-1 w-full md:w-auto">
             <h2 className="text-[10px] font-black text-[#003366] uppercase tracking-[0.2em]">Vista Previa del Documento</h2>
-            {tipoReporte === 'inventario' && (
-              <div className="flex items-center gap-2 mt-1">
-                <TrendingUp className="w-4 h-4 text-emerald-500" />
-                <p className="text-emerald-600 font-black text-lg">{formatMoney(totalInforme)}</p>
-              </div>
-            )}
             
-            {tipoReporte === 'kardex' && (
-              <div className="flex items-center gap-3 mt-2">
-                <div className="relative">
-                  <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                  <input 
-                    type="text"
-                    placeholder="Filtrar producto..."
-                    className="pl-9 pr-4 py-2 bg-slate-50 border-none rounded-xl text-[11px] focus:ring-2 focus:ring-amber-500 outline-none w-48 transition-all"
-                    value={filtroProducto}
-                    onChange={(e) => setFiltroProducto(e.target.value)}
-                  />
-                </div>
-                <div className="relative">
-                  <Filter className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                  <select 
-                    className="pl-9 pr-8 py-2 bg-slate-50 border-none rounded-xl text-[11px] focus:ring-2 focus:ring-amber-500 outline-none appearance-none cursor-pointer"
-                    value={filtroTipo}
-                    onChange={(e) => setFiltroTipo(e.target.value)}
+            {/* Filtros dinámicos según el reporte */}
+            <div className="flex flex-wrap items-center gap-3 mt-2">
+              {tipoReporte === 'inventario' ? (
+                <>
+                  <div className="flex items-center gap-2 mr-4">
+                    <TrendingUp className="w-4 h-4 text-emerald-500" />
+                    <p className="text-emerald-600 font-black text-lg">{formatMoney(totalInforme)}</p>
+                  </div>
+                  
+                  {/* Select Marca */}
+                  <div className="relative">
+                    <Package className="w-3 h-3 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                    <select 
+                      className="pl-8 pr-8 py-2 bg-slate-50 border-none rounded-xl text-[10px] font-bold text-slate-600 outline-none appearance-none cursor-pointer hover:bg-slate-100 transition-colors"
+                      value={filtroMarca}
+                      onChange={(e) => setFiltroMarca(e.target.value)}
+                    >
+                      <option value="todas">TODAS LAS MARCAS</option>
+                      {marcas.map(m => <option key={m.id} value={m.id}>{m.nombre.toUpperCase()}</option>)}
+                    </select>
+                  </div>
+
+                  {/* Select Categoría */}
+                  <div className="relative">
+                    <Filter className="w-3 h-3 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                    <select 
+                      className="pl-8 pr-8 py-2 bg-slate-50 border-none rounded-xl text-[10px] font-bold text-slate-600 outline-none appearance-none cursor-pointer hover:bg-slate-100 transition-colors"
+                      value={filtroCategoria}
+                      onChange={(e) => setFiltroCategoria(e.target.value)}
+                    >
+                      <option value="todas">TODAS LAS CATEGORÍAS</option>
+                      {categorias.map(c => <option key={c.id} value={c.id}>{c.nombre.toUpperCase()}</option>)}
+                    </select>
+                  </div>
+
+                  {/* Select Mes */}
+                  <div className="relative">
+                    <CalendarDays className="w-3 h-3 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                    <select 
+                      className="pl-8 pr-8 py-2 bg-slate-50 border-none rounded-xl text-[10px] font-bold text-slate-600 outline-none appearance-none cursor-pointer hover:bg-slate-100 transition-colors"
+                      value={filtroMes}
+                      onChange={(e) => setFiltroMes(e.target.value)}
+                    >
+                      <option value="todos">CUALQUIER MES</option>
+                      {meses.map(m => <option key={m.id} value={m.id}>{m.name.toUpperCase()}</option>)}
+                    </select>
+                  </div>
+
+                  <button 
+                    onClick={() => generarReporte('inventario')}
+                    className="bg-[#003366] text-white px-4 py-2 rounded-xl text-[9px] font-black hover:bg-[#001a33] transition-all"
                   >
-                    <option value="todos">Todos</option>
-                    <option value="entrada">Entradas</option>
-                    <option value="salida">Salidas</option>
-                  </select>
-                </div>
-                <button 
-                  onClick={() => generarReporte('kardex')}
-                  className="bg-amber-500 hover:bg-amber-600 text-white px-4 py-2 rounded-xl text-[10px] font-bold transition-colors"
-                >
-                  APLICAR
-                </button>
-              </div>
-            )}
+                    APLICAR
+                  </button>
+                </>
+              ) : tipoReporte === 'kardex' && (
+                <>
+                  <div className="relative">
+                    <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                    <input 
+                      type="text"
+                      placeholder="Filtrar producto..."
+                      className="pl-9 pr-4 py-2 bg-slate-50 border-none rounded-xl text-[11px] focus:ring-2 focus:ring-amber-500 outline-none w-48 transition-all"
+                      value={filtroProducto}
+                      onChange={(e) => setFiltroProducto(e.target.value)}
+                    />
+                  </div>
+                  <div className="relative">
+                    <Filter className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                    <select 
+                      className="pl-9 pr-8 py-2 bg-slate-50 border-none rounded-xl text-[11px] focus:ring-2 focus:ring-amber-500 outline-none appearance-none cursor-pointer"
+                      value={filtroTipo}
+                      onChange={(e) => setFiltroTipo(e.target.value)}
+                    >
+                      <option value="todos">Todos</option>
+                      <option value="entrada">Entradas</option>
+                      <option value="salida">Salidas</option>
+                    </select>
+                  </div>
+                  <button 
+                    onClick={() => generarReporte('kardex')}
+                    className="bg-amber-500 hover:bg-amber-600 text-white px-4 py-2 rounded-xl text-[10px] font-bold transition-colors"
+                  >
+                    APLICAR
+                  </button>
+                </>
+              )}
+            </div>
           </div>
 
+          {/* Botones Exportar */}
           <div className="flex gap-3 w-full md:w-auto">
             <button onClick={handleExportPDF} className="flex-1 md:flex-none flex items-center justify-center gap-2 bg-[#003366] text-white px-6 py-3 rounded-xl text-xs font-bold hover:bg-[#001a33] transition-all">
               <FileText className="w-4 h-4" /> PDF
@@ -191,6 +277,7 @@ function Informes() {
           </div>
         </div>
 
+        {/* Tabla */}
         <div className="flex-1 overflow-y-auto overflow-x-auto custom-scrollbar bg-white">
           <table className="w-full text-left border-separate border-spacing-0 table-responsive">
             <thead className="sticky top-0 bg-white/95 backdrop-blur-md z-10 hidden md:table-header-group">
@@ -235,7 +322,6 @@ function Informes() {
           )}
         </div>
       </div>
-
     </div>
   );
 }
