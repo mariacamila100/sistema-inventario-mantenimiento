@@ -286,7 +286,7 @@ function Productos() {
             <thead className="hidden lg:table-header-group">
               <tr className="bg-slate-50/50 border-b border-slate-100">
                 <th className="px-8 py-5 text-xs font-bold text-slate-400 uppercase tracking-widest">Producto</th>
-                <th className="px-8 py-5 text-xs font-bold text-slate-400 uppercase tracking-widest">Categoría / Marca</th>
+                <th className="px-8 py-5 text-xs font-bold text-slate-400 uppercase tracking-widest">Bodega/Marca</th>
                 <th className="px-8 py-5 text-xs font-bold text-slate-400 uppercase tracking-widest text-center">Stock</th>
                 <th className="px-8 py-5 text-xs font-bold text-slate-400 uppercase tracking-widest">Precio / Total</th>
                 <th className="px-8 py-5 text-xs font-bold text-slate-400 uppercase tracking-widest text-right">Acciones</th>
